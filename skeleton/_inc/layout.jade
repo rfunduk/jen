@@ -1,0 +1,44 @@
+!!! 5
+
+html
+  head
+    title= config.title + ' &raquo; ' + title
+    meta( name='description', content=description )
+    meta( charset='utf-8' )
+
+    link( rel='canonical', href="#{config.root}/#{permalink}" )
+
+    - styles = _.flatten( [ config.styles.all, config.styles[kind], styles || [] ] );
+    - _.compact(styles).forEach( function( style ) {
+      link( rel='stylesheet', href='/css/' + style, type='text/css', media='all' )
+    - } );
+
+    - scripts = _.flatten( [ config.scripts.all, config.scripts[kind], scripts || [] ] );
+    - _.compact(scripts).forEach( function( script ) {
+      - path = script.match(/^http/) ? script : '/js/' + script;
+      script( type='text/javascript', src=path )
+    - } );
+
+  body( lang='en', class=kind )
+    #header
+      h1 #{config.title}
+
+    #content
+      h2 #{title}
+
+      div!= content
+
+      p
+        - if( permalink != config.index )
+          | Back to the
+          != h.link_to( 'intro', 'introduction' ) + '.'
+          br
+        - [ 'layout', 'posts-and-pages' ].forEach( function( kind ) {
+          - if( permalink == 'more-about-' + kind ) { return; }
+          | Read more about
+          != h.link_to( 'more-about-' + kind, kind.replace(/-/g, ' ') ) + '.'
+          br
+        - } )
+
+    #footer
+      | Copyright &copy; - You?
