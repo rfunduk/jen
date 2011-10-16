@@ -1,6 +1,6 @@
 {
   "PORT": 3000,
-  "index": "intro",
+  "index": "home",
   "title": "My Site",
   "root": "http://mysite.com",
   "analytics_id": "UA-XXXXXXX-N",

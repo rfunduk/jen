@@ -35,18 +35,8 @@ if SEED
   Logger.info "SEEDED -> #{dest}"
   process.exit(0)
 
-
-if DEPLOY
-  Logger.info "  DEPLOYING (w/ #{Config.deploy})"
-  cp.exec Config.deploy, ( err ) ->
-    Logger.error "  WTF? #{err}" if err
-    Logger.info "  DONE" unless err
-
-  process.exit(0)
-
-
-# local libs/utils
 Config = require 'config'
+
 Watcher = require 'watcher'
 Builder = require 'builder'
 
@@ -56,7 +46,6 @@ if DEV
 
 Builder.config Config
 Logger.config Config
-
 
 go = () ->
   Builder.buildSite()
@@ -94,7 +83,17 @@ if Config.DEV
 
   Logger.info "DEV :: Server listening on :#{Config.PORT}"
 else
-  Logger.info "BUILD ONLY"
-  cp.exec "rm -rf build", () ->
-    fs.mkdir "build", 0777, () ->
-      go()
+  if BUILD
+    Logger.info "BUILD"
+    cp.exec "rm -rf build", () ->
+      fs.mkdir "build", 0777, () ->
+        go()
+    process.exit(0)
+  if DEPLOY
+    Logger.info "  DEPLOYING (w/ #{Config.deploy})"
+    cp.exec Config.deploy, ( err ) ->
+      Logger.error "  WTF? #{err}" if err
+      Logger.info "  DONE" unless err
+    process.exit(0)
+
+

@@ -2,7 +2,7 @@
 
 html
   head
-    title= config.title + ' &raquo; ' + title
+    title= config.title + ( title ? ' &raquo; ' + title : '' )
     meta( name='description', content=description )
     meta( charset='utf-8' )
 
@@ -21,16 +21,21 @@ html
 
   body( lang='en', class=kind )
     #header
-      h1 #{config.title}
+      h1
+        a( href='/' )= config.title
 
     #content
-      h2 #{title}
+      - if( title )
+        h2= title
 
       div!= content
 
       p
-        - if( permalink != config.index )
-          | Back to the
+        - if( permalink != 'intro' )
+          - if( permalink != 'home' )
+            | Back to the
+          - else
+            | Read the
           != h.link_to( 'intro', 'introduction' ) + '.'
           br
         - [ 'layout', 'posts-and-pages' ].forEach( function( kind ) {

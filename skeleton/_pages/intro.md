@@ -14,9 +14,8 @@ Overall site configuration. Some of these keys
 are required, but you can populate it with
 whatever you need to render your views.
 
-For example, the `PORT` key is
-used to run the development server are likely
-viewing right now.
+For example, the `PORT` key is used to run the
+development server you are likely viewing right now.
 
 But you'll notice that the `scripts`
 key is simply used in the `head` of
