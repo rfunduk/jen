@@ -87,12 +87,10 @@ else
     cp.exec "rm -rf build", () ->
       fs.mkdir "build", 0777, () ->
         go()
-    process.exit(0)
   if DEPLOY
     Logger.info "  DEPLOYING (w/ #{Config.deploy})"
     cp.exec Config.deploy, ( err ) ->
       Logger.error "  WTF? #{err}" if err
       Logger.info "  DONE" unless err
-    process.exit(0)
 
 
