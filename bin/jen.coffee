@@ -15,7 +15,6 @@ argv = require('optimist').argv
 if argv.seed
   SEED = true
 else if argv.deploy
-  BUILD = true
   DEPLOY = true
 else if argv.build
   BUILD = true
