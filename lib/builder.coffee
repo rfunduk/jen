@@ -8,6 +8,7 @@ path = require 'path'
 less = require 'less'
 md = require( 'node-markdown' ).Markdown
 strftime = require( 'strftime' ).strftime
+mkdir_p = require( 'mkdir_p' ).mkdir_p
 coffeescript = require 'coffee-script'
 
 Watcher = require './watcher'
@@ -51,10 +52,13 @@ Builder.config = ( config ) ->
   Logger.config Config
 
 Builder.render = ( path, kind, pathOverride=null ) ->
-  permalink = path.split('.')[0]
-  fs.mkdir "#{CWD}/build/#{permalink}", 0777, ( err ) ->
-    meta = _.clone( global["#{kind.toUpperCase()}_INFO"][path] )
-
+  meta = _.clone( global["#{kind.toUpperCase()}_INFO"][path] )
+  dir = "#{CWD}/build/#{meta.permalink}"
+  mkdir_p dir, 0777, ( err ) ->
+    if err
+      Logger.error "Error in mkdir_p - #{dir} - #{err}"
+      return
+    Logger.debug "Processing #{meta.permalink}"
     meta.kind = kind
     meta.posts = sortedPosts()
     meta.pages = _.values(global.PAGE_INFO)
@@ -76,10 +80,12 @@ Builder.render = ( path, kind, pathOverride=null ) ->
     fs.readFile "#{CWD}/_inc/layout.jade", ( err, layout ) ->
       tmpl = jade.compile layout.toString(), meta
       html = tmpl meta
-      Logger.error( permalink, err, err.stack ) if err
-      dest = pathOverride || "#{permalink}/index.html"
-      fs.writeFile "#{CWD}/build/#{dest}", html.toString(), ( err ) ->
-        Logger.error err if err
+      Logger.error( meta.permalink, err, err.stack ) if err
+      dest = pathOverride || "#{meta.permalink}/index.html"
+      dest = "#{CWD}/build/#{dest}"
+      fs.writeFile dest, html.toString(), ( err ) ->
+        Logger.error "Error writing final render #{err}" if err
+        Logger.debug "Wrote #{dest}"
 
 
 contentList = ( filenames ) ->
@@ -88,8 +94,38 @@ contentList = ( filenames ) ->
 # find all pages
 Builder.buildSite = () ->
   findFunctions =
-    pages: ( cb ) -> fs.readdir "#{CWD}/_pages", cb
-    posts: ( cb ) -> fs.readdir "#{CWD}/_posts", cb
+    posts: ( cb ) ->
+      fs.readdir "#{CWD}/_posts", ( err, listings ) ->
+        # error is ok, no posts.
+        cb( null, listings || [] )
+    pages: ( cb ) ->
+      paths = []
+      processor = ( listing, done ) ->
+        if listing == null
+          done()
+          return
+        fs.stat "#{CWD}/_pages/#{listing}", ( err, stat ) ->
+          if err
+            Logger.error( "Could not stat file #{listing}" )
+            done()
+          else if stat.isFile()
+            paths.push listing
+            done()
+          else
+            fs.readdir "#{CWD}/_pages/#{listing}", ( err2, sublistings ) ->
+              sublistings.forEach ( sublisting ) ->
+                q.push( "#{listing}/#{sublisting}" )
+              done()
+
+      q = async.queue processor, 1
+
+      fs.readdir "#{CWD}/_pages", ( err, listings ) ->
+        # again, error is ok
+        (listings || []).forEach ( listing ) -> q.push( listing )
+
+      q.push( null ) # kick off queue, even if there are no posts
+      q.drain = () -> cb( null, paths );
+
   async.parallel findFunctions, ( err, all ) ->
     pages = contentList( all.pages )
     posts = contentList( all.posts )
@@ -100,22 +136,32 @@ Builder.buildSite = () ->
           if meta.permalink == Config.index
             Logger.debug "  index: #{meta.permalink}"
             Builder.render( thing, kind, 'index.html' )
-          Builder.render thing, kind
           Logger.debug( "  #{kind}: #{meta.permalink}" )
+          Builder.render thing, kind
         else
           Logger.debug( "  skipped: #{thing}" )
     process = ( kind ) ->
       return ( thing ) ->
         return ( cb ) ->
           fs.readFile "#{CWD}/_#{kind}s/#{thing}", ( err, src ) ->
-            Logger.error err if err
+            Logger.error "Error reading source of #{thing} - #{err}" if err
             src = src.toString().split(';\n')
             meta = JSON.parse src[0]
             meta.scripts = [] unless meta.scripts
             meta.styles = [] unless meta.styles
             meta.src = src.splice(1).join(';')
-            meta.permalink = thing.split('.')[0]
-            meta.filename = thing
+
+            pathParts = thing.split('.')
+            meta.extension = pathParts.pop()
+            pathParts = pathParts.pop().split('/')
+
+            meta.filename = pathParts.pop()
+            meta.path = pathParts.join('/')
+            if meta.path
+              meta.path += '/'
+            meta.permalink = "#{meta.path}#{meta.filename}"
+
+            thing = "#{meta.permalink}.#{meta.extension}"
 
             if kind == 'post'
               dateFields = _.map(meta.date.split('.').reverse(), (f) -> parseInt(f, 10))
@@ -143,7 +189,7 @@ Builder.buildSite = () ->
           newest = sortedPosts()[0]
           # and make it the index
           Logger.debug "  index: #{newest.permalink}"
-          Builder.render newest.filename, 'post', 'index.html'
+          Builder.render newest.permalink, 'post', 'index.html'
     )
 
     if Config.DEV
@@ -165,19 +211,23 @@ Builder.compileStyles = () ->
       fs.mkdir "build/css", 0777, ( err ) ->
         done = ( err, src ) ->
           if err
-            Logger.error "Could not process style: #{style}, #{err}"
+            Logger.error "Could not process style: #{style}, #{JSON.stringify(err,undefined,2)}"
             return
           #log.info "SRC: #{src.toString()}"
           fs.writeFile "build/css/#{style.replace(/less$/, 'css')}", src.toString(), ( err ) ->
-            Logger.error err if err
+            Logger.error "Error in style done callback #{err}" if err
             Logger.debug "  style: #{style}"
 
         if style.match /less$/
           parser.parse( css.toString(), ( err, src ) ->
             if err
-              Logger.error "Could not process style: #{style}, #{err}"
+              done( err, src )
               return
-            done( null, src.toCSS( compress: true ) )
+            try
+              result = src.toCSS( compress: true )
+              done( null, result )
+            catch err2
+              done( err2, src )
           )
         else
           done( null, css+"" )
@@ -195,7 +245,7 @@ Builder.compileScripts = () ->
           fs.mkdir "build/js", 0777, ( err ) ->
             src = if script.match( /coffee$/ ) then coffeescript.compile( coffee+"" ) else (coffee+"")
             fs.writeFile "build/js/#{script.replace(/coffee$/, 'js')}", src.toString(), ( err ) ->
-              Logger.error err if err
+              Logger.error "Error in script done callback #{err}" if err
               Logger.debug "  script: #{script}"
       f()
       Watcher.onChange "_scripts/#{script}", f
@@ -208,7 +258,7 @@ Builder.copyStatics = () ->
   fs.readdir "_static", ( err, statics ) ->
     contentList(statics).forEach ( static ) ->
       cp.exec "rm -rf build/#{static}", ( err ) ->
-        Logger.error err if err
+        Logger.error "Error in static copy #{err}" if err
         if !Config.DEV
           src = "_static/#{static}"
           dest = "build/#{static}"
@@ -218,4 +268,4 @@ Builder.copyStatics = () ->
             Logger.error err if err
         else
           fs.symlink "../_static/#{static}", "build/#{static}", ( err ) ->
-            Logger.error err if err
+            Logger.error "Error symlinking statics #{err}" if err
