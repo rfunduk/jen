@@ -52,7 +52,7 @@ Builder.config = ( config ) ->
   Logger.config Config
 
 Builder.render = ( path, kind, pathOverride=null ) ->
-  meta = _.clone( global["#{kind.toUpperCase()}_INFO"][path] )
+  meta = _.clone(Builder.getInfo( path, kind ))#_.clone( global["#{kind.toUpperCase()}_INFO"][path] )
   dir = "#{CWD}/build/#{meta.permalink}"
   mkdir_p dir, 0777, ( err ) ->
     if err
@@ -74,8 +74,12 @@ Builder.render = ( path, kind, pathOverride=null ) ->
       { strftime: strftime }
     )
 
-    meta.processed = ejs.render meta.src, locals: meta
-    meta.content = md( meta.processed )
+    try
+      meta.processed = ejs.render meta.src, locals: meta
+      meta.content = md( meta.processed )
+    catch e
+      Logger.error "Could not process file: #{meta.permalink} - #{e}"
+      return
 
     fs.readFile "#{CWD}/_inc/layout.jade", ( err, layout ) ->
       tmpl = jade.compile layout.toString(), meta
@@ -135,9 +139,9 @@ Builder.buildSite = () ->
         if Config.DEV || !meta.draft
           if meta.permalink == Config.index
             Logger.debug "  index: #{meta.permalink}"
-            Builder.render( thing, kind, 'index.html' )
+            Builder.render( meta.thing, kind, 'index.html' )
           Logger.debug( "  #{kind}: #{meta.permalink}" )
-          Builder.render thing, kind
+          Builder.render meta.thing, kind
         else
           Logger.debug( "  skipped: #{thing}" )
     process = ( kind ) ->
@@ -161,7 +165,7 @@ Builder.buildSite = () ->
               meta.path += '/'
             meta.permalink = "#{meta.path}#{meta.filename}"
 
-            thing = "#{meta.permalink}.#{meta.extension}"
+            meta.thing = "#{meta.permalink}.#{meta.extension}"
 
             if kind == 'post'
               dateFields = _.map(meta.date.split('.').reverse(), (f) -> parseInt(f, 10))
@@ -170,7 +174,7 @@ Builder.buildSite = () ->
             meta.kind = kind
             path.exists "#{CWD}/_static/img/#{meta.permalink}/thumb.png", ( yepnope ) ->
               meta.hasThumb = yepnope
-              Builder.addInfo( thing, kind, meta )
+              Builder.addInfo( meta.thing, kind, meta )
               cb() if cb
 
     pageProcess = process( 'page' )
@@ -189,7 +193,7 @@ Builder.buildSite = () ->
           newest = sortedPosts()[0]
           # and make it the index
           Logger.debug "  index: #{newest.permalink}"
-          Builder.render newest.permalink, 'post', 'index.html'
+          Builder.render newest.thing, 'post', 'index.html'
     )
 
     if Config.DEV
