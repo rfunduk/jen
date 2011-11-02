@@ -6,6 +6,7 @@
   "repository": "git://github.com/rfunduk/jen",
   "bin": { "jen": "./bin/jen" },
   "dependencies": {
+    "cson": "0.2.0",
     "optimist": "0.2.6",
     "wrench": "1.2.0",
     "node-markdown": "0.1.0",
