@@ -21,14 +21,6 @@ CWD = process.cwd()
 jade.filters.plain = ( b, c ) ->
   return b.toString()
 
-try
-  fs.statSync( "#{CWD}/custom.js" )
-  custom = require "#{CWD}/custom"
-  Logger.info "PLUGINS: #{_.keys(custom).join(',')}"
-catch e
-  Logger.info "PLUGINS: None"
-  custom = {}
-
 global =
   PAGE_INFO: {}
   POST_INFO: {}
@@ -65,10 +57,10 @@ Builder.render = ( path, kind, pathOverride=null ) ->
     meta.config = Config
     meta._ = _
     meta.h = _.reduce(
-      _.keys( custom ),
+      _.keys( Config.helpers ),
       (
         (uh, key) ->
-          uh[key] = custom[key](meta)
+          uh[key] = _.bind( Config.helpers[key], meta )
           return uh
       ),
       { strftime: strftime }
