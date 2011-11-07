@@ -17,6 +17,8 @@ numbers: [ 1, 2, 3 ]
 helpers:
   gist: ( filename ) ->
     "<script src='https://gist.github.com/#{@gist||'0'}.js?file=#{filename}'></script>"
+  url_for: ( permalink ) ->
+    "/#{permalink}"
   link_to: ( permalink, custom_title ) ->
     return "<strike>MISSING</strike>" unless @_.detect( @_.flatten([@posts,@pages]), ( p ) -> p.permalink == permalink )
-    "<a href='/#{permalink}'>#{custom_title || @title}</a>"
+    "<a href='#{@h.url_for(permalink)}'>#{custom_title || @title}</a>"

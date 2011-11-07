@@ -46,3 +46,5 @@ Which would render:
 This example is possibly not the best use of `ejs` :)
 Probably the most common use will simply be for using helpers
 you define in `custom.js`.
+
+Here's a post with some misc stuff - [omg!](<%- h.url_for('misc-stuff') %>)

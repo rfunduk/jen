@@ -6,7 +6,6 @@ ejs = require 'ejs'
 async = require 'async'
 path = require 'path'
 less = require 'less'
-md = require( 'node-markdown' ).Markdown
 strftime = require( 'strftime' ).strftime
 mkdir_p = require( 'mkdir_p' ).mkdir_p
 coffeescript = require 'coffee-script'
@@ -44,6 +43,20 @@ Builder.config = ( config ) ->
   Config = config
   Logger.config Config
 
+renderers = {}
+innerContent = ( meta ) ->
+  type = meta.extension
+  switch type
+    when 'md'
+      meta.preprocessed = ejs.render( meta.src, locals: meta )
+      renderers[type] ?= require( 'node-markdown' ).Markdown
+      return renderers[type]( meta.preprocessed )
+    when 'jade'
+      renderers[type] ?= jade
+      return renderers[type].compile( meta.src, meta )(meta)
+    when 'ejs'
+      return ejs.render( meta.src, locals: meta )
+
 Builder.render = ( path, kind, pathOverride=null ) ->
   meta = _.clone(Builder.getInfo( path, kind ))#_.clone( global["#{kind.toUpperCase()}_INFO"][path] )
   dir = "#{CWD}/build/#{meta.permalink}"
@@ -68,10 +81,9 @@ Builder.render = ( path, kind, pathOverride=null ) ->
     )
 
     try
-      meta.processed = ejs.render meta.src, locals: meta
-      meta.content = md( meta.processed )
+      meta.content = innerContent( meta )
     catch e
-      Logger.error "Could not process file: #{meta.permalink} - #{e}"
+      Logger.error "Could not process file: #{meta.permalink} - #{e}, #{e.stack}"
       return
 
     fs.readFile "#{CWD}/_inc/layout.jade", ( err, layout ) ->
@@ -130,7 +142,7 @@ Builder.buildSite = () ->
       return ( thing ) ->
         meta = Builder.getInfo( thing, kind )
         if Config.DEV || !meta.draft
-          if meta.permalink == Config.index
+          if meta.permalink == Config.index || meta.index
             Logger.debug "  index: #{meta.permalink}"
             Builder.render( meta.thing, kind, 'index.html' )
           Logger.debug( "  #{kind}: #{meta.permalink}" )
@@ -144,8 +156,8 @@ Builder.buildSite = () ->
             Logger.error "Error reading source of #{thing} - #{err}" if err
             src = src.toString().split('---\n')
             meta = CSON.parseSync src[0]
-            meta.scripts = [] unless meta.scripts
-            meta.styles = [] unless meta.styles
+            meta.scripts ?= []
+            meta.styles ?= []
             meta.src = src.splice(1).join('---\n')
 
             pathParts = thing.split('.')
@@ -154,8 +166,7 @@ Builder.buildSite = () ->
 
             meta.filename = pathParts.pop()
             meta.path = pathParts.join('/')
-            if meta.path
-              meta.path += '/'
+            meta.path += '/' if meta.path
             meta.permalink = "#{meta.path}#{meta.filename}"
 
             meta.thing = "#{meta.permalink}.#{meta.extension}"
@@ -181,9 +192,10 @@ Builder.buildSite = () ->
       ( err ) ->
         pages.forEach f('page')
         posts.forEach f('post')
-        if !Config.index
+        if not Config.index?
           # determine newest post
           newest = sortedPosts()[0]
+          newest.index = true
           # and make it the index
           Logger.debug "  index: #{newest.permalink}"
           Builder.render newest.thing, 'post', 'index.html'

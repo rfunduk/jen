@@ -57,7 +57,7 @@ go = () ->
       Watcher.onChange "_inc/#{inc}", Builder.buildSite
 
   # watch config file and re-do whole site if it changes
-  Watcher.onChange "config.json", () ->
+  Watcher.onChange "config", () ->
     Config._reload()
     Builder.buildSite()
     Builder.compileStyles()

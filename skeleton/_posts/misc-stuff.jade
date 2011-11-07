@@ -1,0 +1,35 @@
+title: "Misc Stuff"
+description: "A post in which I show off some other cool stuff."
+date: "7.11.2011"
+---
+p
+  | This post is written with
+  a( href="http://jade-lang.com/", target="_blank" ) jade
+  |,
+  | so it will look significantly different than the usual
+  | markdown ones.
+
+p
+  | You still have access to the same stuff:
+
+ul
+  li
+    | The kind:
+    br
+    code= kind
+  li
+    | The date:
+    br
+    code= h.strftime( timestamp, "%B %d, %Y" )
+  li
+    | The helpers:
+    br
+    code= _.keys( h ).slice( 0, 5 ).join( ', ' ) + '...'
+  li
+    | The pages and posts:
+    br
+    code= pages.length.toString() + " pages, " + posts.length.toString() + " posts."
+  li
+    | The configuration:
+    br
+    code= "dev server on port " + config.PORT + ", site name: " + config.title
