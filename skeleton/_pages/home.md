@@ -1,7 +1,8 @@
 {
   "title": "",
   "description": "A page to show how jen works."
-};
+}
+---
 Welcome to the `jen` skeleton site.
 
 This is a great starting point for your own site.

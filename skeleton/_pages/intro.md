@@ -1,7 +1,8 @@
 {
   "title": "Have you met Jen?",
   "description": "A page to show how jen works."
-};
+}
+---
 This is a skeleton app. You will find the overall
 style and layout (including this text) in
 `_inc/layout.jade`. Other places of
@@ -82,14 +83,23 @@ Blog posts and pages! Either is optional. You can have no
 pages or no posts (making what is not really a blog, of course).
 
 The general idea is to put at the top of each one a
-JSON block that describes it:
+`JSON` block that describes it:
 
       {
         "title": "POST TITLE",
         "description": "POST DESCRIPTION",
         "date": "DD.MM.YYYY",
         "draft": true|false
-      };
+      }
+      ---
+
+Wait! It's _actually_ `CSON`! That means you can be way sexier:
+
+      title: "POST TITLE"
+      description: "POST DESCRIPTION"
+      date: "DD.MM.YYYY"
+      draft: true|false
+      ---
 
 Posts don't require a date, and the `draft` field is optional
 in both cases.

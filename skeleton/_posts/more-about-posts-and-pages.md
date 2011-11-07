@@ -2,7 +2,8 @@
   "title": "More About Posts &amp; Pages",
   "description": "A post in which I explain: 'what is up with posts and pages?'",
   "date": "1.10.2011"
-};
+}
+---
 Pages and posts are practically the same. The key difference is
 that pages are not dated.
 

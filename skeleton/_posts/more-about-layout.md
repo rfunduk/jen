@@ -1,8 +1,7 @@
-{
-  "title": "More About Layout",
-  "description": "A post in which I explain: 'what is up with layout?'",
-  "date": "1.10.2011"
-};
+title: "More About Layout"
+"description": "A post in which I explain: 'what is up with layout?'"
+"date": "1.10.2011"
+---
 `_inc/layout.jade` defines the overall containing markup of
 every generated page on the site.
 

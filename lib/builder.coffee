@@ -10,6 +10,7 @@ md = require( 'node-markdown' ).Markdown
 strftime = require( 'strftime' ).strftime
 mkdir_p = require( 'mkdir_p' ).mkdir_p
 coffeescript = require 'coffee-script'
+CSON = require 'cson'
 
 Watcher = require './watcher'
 Logger = require './logger'
@@ -141,11 +142,11 @@ Builder.buildSite = () ->
         return ( cb ) ->
           fs.readFile "#{CWD}/_#{kind}s/#{thing}", ( err, src ) ->
             Logger.error "Error reading source of #{thing} - #{err}" if err
-            src = src.toString().split(';\n')
-            meta = JSON.parse src[0]
+            src = src.toString().split('---\n')
+            meta = CSON.parseSync src[0]
             meta.scripts = [] unless meta.scripts
             meta.styles = [] unless meta.styles
-            meta.src = src.splice(1).join(';')
+            meta.src = src.splice(1).join('---\n')
 
             pathParts = thing.split('.')
             meta.extension = pathParts.pop()
