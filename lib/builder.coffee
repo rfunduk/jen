@@ -6,10 +6,9 @@ ejs = require 'ejs'
 async = require 'async'
 path = require 'path'
 less = require 'less'
-strftime = require( 'strftime' ).strftime
+moment = require( 'moment' )
 mkdir_p = require( 'mkdir_p' ).mkdir_p
 coffeescript = require 'coffee-script'
-CSON = require 'cson'
 
 Watcher = require './watcher'
 Logger = require './logger'
@@ -77,7 +76,7 @@ Builder.render = ( path, kind, pathOverride=null ) ->
           uh[key] = _.bind( Config.helpers[key], meta )
           return uh
       ),
-      { strftime: strftime }
+      { moment: moment }
     )
 
     try
@@ -155,7 +154,7 @@ Builder.buildSite = () ->
           fs.readFile "#{CWD}/_#{kind}s/#{thing}", ( err, src ) ->
             Logger.error "Error reading source of #{thing} - #{err}" if err
             src = src.toString().split('---\n')
-            meta = CSON.parseSync src[0]
+            meta = eval coffeescript.compile( src[0], { bare: true } )
             meta.scripts ?= []
             meta.styles ?= []
             meta.src = src.splice(1).join('---\n')

@@ -20,7 +20,7 @@ ul
   li
     | The date:
     br
-    code= h.strftime( timestamp, "%B %d, %Y" )
+    code= h.moment( timestamp ).format( "%B %d, %Y" )
   li
     | The helpers:
     br

@@ -93,7 +93,8 @@ The general idea is to put at the top of each one a
       }
       ---
 
-Wait! It's _actually_ `CSON`! That means you can be way sexier:
+Wait! It's actually evaluated with [CoffeeScript](http://coffeescript.org/)!
+That means you can be way sexier:
 
       title: "POST TITLE"
       description: "POST DESCRIPTION"
@@ -124,14 +125,14 @@ posts and pages:
   For example, this site has <%- posts.length %> post(s) and
   <%- pages.length %> page(s). You might write some navigation of some
   kind, etc, using these.
-- **`h`**: Helpers, `strftime` is included for you, but the rest
-  are all defined you by you `custom.js`.
+- **`h`**: Helpers, [`moment`](http://momentjs.com/) is included for you,
+  but the rest are all defined by you in `config` under the `helpers` key.
 - **`config`**: The site's overall configuration, as seen and
-  defined in `config.json`. Having this available means you can
+  defined in `config`. Having this available means you can
   configure your app however makes sense to you. Want to show
   the 5 most recent posts on the bottom of every page on the site?
   You could hardcode the `5` but it would be better to add
-  `"post_count": 5` to `config.json` and then use this value
+  `"post_count": 5` to `config` and then use this value
   in the views. For example, the example configuration has a key:
   `custom_setting`, it's value is <%- config.custom_setting %>.
 - **`_`**: [Underscore](http://documentcloud.github.com/underscore/),
