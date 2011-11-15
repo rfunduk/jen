@@ -175,10 +175,8 @@ Builder.buildSite = () ->
               meta.timestamp = new Date( dateFields[0], dateFields[1] - 1, dateFields[2] )
 
             meta.kind = kind
-            path.exists "#{CWD}/_static/img/#{meta.permalink}/thumb.png", ( yepnope ) ->
-              meta.hasThumb = yepnope
-              Builder.addInfo( meta.thing, kind, meta )
-              cb() if cb
+            Builder.addInfo( meta.thing, kind, meta )
+            cb() if cb
 
     pageProcess = process( 'page' )
     postProcess = process( 'post' )
