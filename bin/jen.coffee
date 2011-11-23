@@ -47,23 +47,23 @@ Builder.config Config
 Logger.config Config
 
 go = () ->
-  Builder.buildSite()
-  Builder.compileStyles()
-  Builder.compileScripts()
-
-  # watch inc files and re-do the whole site if they change
-  fs.readdir "_inc", ( err, incs ) ->
-    incs.forEach ( inc ) ->
-      Watcher.onChange "_inc/#{inc}", Builder.buildSite
-
-  # watch config file and re-do whole site if it changes
-  Watcher.onChange "config", () ->
-    Config._reload()
+  rebuild = () ->
+    Builder.reset()
     Builder.buildSite()
     Builder.compileStyles()
     Builder.compileScripts()
+    Builder.copyStatics()
 
-  Builder.copyStatics()
+  # watch top level and re-do the whole site if they change
+  fs.readdir process.cwd(), ( err, items ) ->
+    items.forEach ( item ) ->
+      return unless item.match( /^_/ )
+      Watcher.onChange item, rebuild
+
+  Watcher.onChange 'config', () -> Config._reload(); rebuild()
+  Watcher.onChange '_inc/layout.jade', () -> rebuild()
+
+  rebuild()
 
 if Config.DEV
   go()

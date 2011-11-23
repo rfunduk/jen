@@ -20,12 +20,14 @@ CWD = process.cwd()
 jade.filters.plain = ( b, c ) ->
   return b.toString()
 
-global =
-  PAGE_INFO: {}
-  POST_INFO: {}
+globalInfo = {}
+
+Builder.reset = () ->
+  globalInfo.PAGE_INFO = {}
+  globalInfo.POST_INFO = {}
 
 sortedPosts = () ->
-  _(global.POST_INFO).chain()
+  _(globalInfo.POST_INFO).chain()
     .values()
     .sortBy( (v) -> return v.timestamp.getTime() )
     .reject( (v) -> return !Config.DEV && v.draft )
@@ -33,9 +35,9 @@ sortedPosts = () ->
     .value()
 
 Builder.addInfo = ( path, kind, info ) ->
-  global["#{kind.toUpperCase()}_INFO"][path] = info
+  globalInfo["#{kind.toUpperCase()}_INFO"][path] = info
 Builder.getInfo = ( path, kind ) ->
-  global["#{kind.toUpperCase()}_INFO"][path]
+  globalInfo["#{kind.toUpperCase()}_INFO"][path]
 
 Config = null
 Builder.config = ( config ) ->
@@ -57,7 +59,7 @@ innerContent = ( meta ) ->
       return ejs.render( meta.src, locals: meta )
 
 Builder.render = ( path, kind, pathOverride=null ) ->
-  meta = _.clone(Builder.getInfo( path, kind ))#_.clone( global["#{kind.toUpperCase()}_INFO"][path] )
+  meta = _.clone(Builder.getInfo( path, kind ))#_.clone( globalInfo["#{kind.toUpperCase()}_INFO"][path] )
   dir = "#{CWD}/build/#{meta.permalink}"
   mkdir_p dir, 0777, ( err ) ->
     if err
@@ -66,7 +68,7 @@ Builder.render = ( path, kind, pathOverride=null ) ->
     Logger.debug "Processing #{meta.permalink}"
     meta.kind = kind
     meta.posts = sortedPosts()
-    meta.pages = _.values(global.PAGE_INFO)
+    meta.pages = _.values(globalInfo.PAGE_INFO)
     meta.config = Config
     meta._ = _
     meta.h = _.reduce(
@@ -199,7 +201,6 @@ Builder.buildSite = () ->
     )
 
     if Config.DEV
-      Logger.info "DEV :: Watching for changes..."
       pages.forEach ( thing ) ->
         Watcher.onChange "_pages/#{thing}", () ->
           pageProcess( thing )( () -> f('page')( thing ) )
@@ -214,6 +215,7 @@ Builder.compileStyles = () ->
   )
   f = ( style ) ->
     fs.readFile "_styles/#{style}", ( err, css ) ->
+      return if err
       fs.mkdir "build/css", 0777, ( err ) ->
         done = ( err, src ) ->
           if err
