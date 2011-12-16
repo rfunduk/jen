@@ -30,7 +30,6 @@ sortedPosts = () ->
   _(globalInfo.POST_INFO).chain()
     .values()
     .sortBy( (v) -> return v.timestamp.getTime() )
-    .reject( (v) -> return !Config.DEV && v.draft )
     .reverse()
     .value()
 
@@ -54,7 +53,7 @@ innerContent = ( meta ) ->
       return renderers[type]( meta.preprocessed )
     when 'jade'
       renderers[type] ?= jade
-      return renderers[type].compile( meta.src, meta )(meta)
+      return renderers[type].compile( meta.src )(meta)
     when 'ejs'
       return ejs.render( meta.src, locals: meta )
 
@@ -66,7 +65,6 @@ Builder.render = ( path, kind, pathOverride=null ) ->
       Logger.error "Error in mkdir_p - #{dir} - #{err}"
       return
     Logger.debug "Processing #{meta.permalink}"
-    meta.kind = kind
     meta.posts = sortedPosts()
     meta.pages = _.values(globalInfo.PAGE_INFO)
     meta.config = Config
@@ -78,7 +76,10 @@ Builder.render = ( path, kind, pathOverride=null ) ->
           uh[key] = _.bind( Config.helpers[key], meta )
           return uh
       ),
-      { moment: moment }
+      {
+        moment: moment
+        innerContent: innerContent
+      }
     )
 
     try
@@ -87,16 +88,22 @@ Builder.render = ( path, kind, pathOverride=null ) ->
       Logger.error "Could not process file: #{meta.permalink} - #{e}, #{e.stack}"
       return
 
-    fs.readFile "#{CWD}/_inc/layout.jade", ( err, layout ) ->
-      tmpl = jade.compile layout.toString(), meta
-      html = tmpl meta
-      Logger.error( meta.permalink, err, err.stack ) if err
-      dest = pathOverride || "#{meta.permalink}/index.html"
-      dest = "#{CWD}/build/#{dest}"
+    writeFile = ( dest, html ) ->
       fs.writeFile dest, html.toString(), ( err ) ->
         Logger.error "Error writing final render #{err}" if err
         Logger.debug "Wrote #{dest}"
 
+    dest = pathOverride || "#{meta.permalink}/index.html"
+    dest = "#{CWD}/build/#{dest}"
+
+    if meta.layout == false
+      writeFile( dest, meta.content )
+    else
+      fs.readFile "#{CWD}/_inc/#{meta.layout||'layout'}.jade", ( err, layout ) ->
+        Logger.error( meta.permalink, err, err.stack ) if err
+        tmpl = jade.compile layout.toString()
+        html = tmpl( meta, (err) -> Logger.error("OMG#{err}") if err )
+        writeFile( dest, html )
 
 contentList = ( filenames ) ->
   _.reject( filenames || [], ( f ) -> f[0] == '.' || f[0] == '_' )
@@ -142,7 +149,7 @@ Builder.buildSite = () ->
     f = ( kind ) ->
       return ( thing ) ->
         meta = Builder.getInfo( thing, kind )
-        if Config.DEV || !meta.draft
+        if Config.DEV || Config.drafts || !meta.draft
           if meta.permalink == Config.index || meta.index
             Logger.debug "  index: #{meta.permalink}"
             Builder.render( meta.thing, kind, 'index.html' )
@@ -177,6 +184,14 @@ Builder.buildSite = () ->
               meta.timestamp = new Date( dateFields[0], dateFields[1] - 1, dateFields[2] )
 
             meta.kind = kind
+
+            # get any old info
+            oldInfo = Builder.getInfo( meta.thing, kind )
+
+            # port over info we populated on first run through
+            meta.index = oldInfo.index if oldInfo
+
+            # insert new info
             Builder.addInfo( meta.thing, kind, meta )
             cb() if cb
 
@@ -189,22 +204,24 @@ Builder.buildSite = () ->
         _.map( posts, postProcess )
       ] ),
       ( err ) ->
+        if not Config.index?
+          # determine newest/index post
+          newestThing = _.reject( sortedPosts(), (p) -> p.draft )[0].thing
+          newestMeta = Builder.getInfo( newestThing, 'post' )
+          newestMeta.index = true
+          Builder.addInfo( newestThing, 'post', newestMeta )
+          Logger.debug "  index: #{newestMeta.permalink}"
         pages.forEach f('page')
         posts.forEach f('post')
-        if not Config.index?
-          # determine newest post
-          newest = sortedPosts()[0]
-          newest.index = true
-          # and make it the index
-          Logger.debug "  index: #{newest.permalink}"
-          Builder.render newest.thing, 'post', 'index.html'
     )
 
     if Config.DEV
       pages.forEach ( thing ) ->
+        Logger.debug "Watching #{thing}"
         Watcher.onChange "_pages/#{thing}", () ->
           pageProcess( thing )( () -> f('page')( thing ) )
       posts.forEach ( thing ) ->
+        Logger.debug "Watching #{thing}"
         Watcher.onChange "_posts/#{thing}", () ->
           postProcess( thing )( () -> f('post')( thing ) )
 

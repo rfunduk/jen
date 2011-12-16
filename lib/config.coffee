@@ -6,7 +6,7 @@ config = {}
 
 mixins =
   _reload: () =>
-    configFile = "#{process.cwd()}/config"
+    configFile = "#{process.cwd()}/config.coffee"
     contents = fs.readFileSync( configFile ).toString()
     compiled = coffee.compile( contents, { bare: true } )
     newConfig = eval compiled

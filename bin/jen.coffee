@@ -39,9 +39,9 @@ Config = require 'config'
 Watcher = require 'watcher'
 Builder = require 'builder'
 
-if DEV
-  Config.DEV = DEV
-  Config.DEBUG = argv.debug
+Config.DEV = DEV
+Config.drafts = DEV || argv.drafts
+Config.DEBUG = argv.debug
 
 Builder.config Config
 Logger.config Config
@@ -88,8 +88,12 @@ else
       fs.mkdir "build", 0777, () ->
         go()
   if DEPLOY
-    Logger.info "  DEPLOYING (w/ #{Config.deploy})"
-    cp.exec Config.deploy, ( err ) ->
+    deployCmd = Config.deploy
+    if typeof(deployCmd) == 'object'
+      deployCmd = Config.deploy[argv.deploy]
+      deployCmd = Config.deploy[Config.deploy.default] unless deployCmd
+    Logger.info "  DEPLOYING (w/ #{deployCmd})"
+    cp.exec deployCmd, ( err ) ->
       Logger.error "  WTF? #{err}" if err
       Logger.info "  DONE" unless err
 
