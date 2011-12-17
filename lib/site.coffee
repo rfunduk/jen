@@ -22,7 +22,11 @@ class Site
       newestThing.index = true
       Logger.debug "As index: #{newestThing.kind}/#{newestThing.permalink}"
   populateInfo: ( kind, items ) ->
-    items.forEach ( item ) => @info[kind][item.permalink] = item
+    items.forEach ( item ) =>
+      if !item.draft || @config.drafts
+        @info[kind][item.permalink] = item
+      else
+        Logger.debug "Skipping #{item.kind}/#{item.permalink}"
   renderAll: ( kind, cb ) ->
     renderTasks = []
     for permalink, item of @info[kind]
