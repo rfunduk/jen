@@ -1,18 +1,69 @@
-jade = require 'jade'
 cp = require 'child_process'
 fs = require 'fs'
 _ = require 'underscore'
-ejs = require 'ejs'
+_.str = require 'underscore.string'
 async = require 'async'
-path = require 'path'
-less = require 'less'
-moment = require( 'moment' )
-mkdir_p = require( 'mkdir_p' ).mkdir_p
-coffeescript = require 'coffee-script'
 
-Watcher = require './watcher'
-Logger = require './logger'
+CONTENT_TYPES = require './content'
 
+class Finder
+  constructor: ( @site, kind, cb ) ->
+    site = @site
+    kind = _.str.rtrim( kind, 's' )
+    klass = _.str.capitalize(kind)
+    @["_get#{klass}Paths"] ( err, filenames ) ->
+      # filter the paths to exclude . and special files, etc
+      filtered = _.reject( filenames || [], ( f ) -> f[0] == '.' || f[0] == '_' )
+      # generate Content instances for each path
+      contentGenerator = ( path, done ) ->
+        content = new CONTENT_TYPES[klass]( site, path )
+        content.process( done )
+      async.map( filtered, contentGenerator, cb )
+  _getStaticPaths: ( cb ) ->
+    fs.readdir "#{@site.root}/_static", ( err, statics ) ->
+      cb( err, statics || [] )
+  _getStylePaths: ( cb ) ->
+    fs.readdir "#{@site.root}/_styles", ( err, styles ) ->
+      cb( err, styles || [] )
+  _getScriptPaths: ( cb ) ->
+    fs.readdir "_scripts", ( err, scripts ) ->
+      cb( err, scripts || [] )
+  _getPostPaths: ( cb ) ->
+    fs.readdir "#{@site.root}/_posts", ( err, listings ) ->
+      # error is ok, no posts.
+      cb( null, listings || [] )
+  _getPagePaths: ( cb ) ->
+    site = @site
+    paths = []
+    processor = ( listing, done ) ->
+      if listing == null
+        done()
+        return
+      fs.stat "#{site.root}/_pages/#{listing}", ( err, stat ) ->
+        if err
+          Logger.error( "Could not stat file #{listing}" )
+          done()
+        else if stat.isFile()
+          paths.push listing
+          done()
+        else
+          fs.readdir "#{site.root}/_pages/#{listing}", ( err2, sublistings ) ->
+            sublistings.forEach ( sublisting ) ->
+              q.push( "#{listing}/#{sublisting}" )
+            done()
+
+    q = async.queue processor, 1
+
+    fs.readdir "#{@site.root}/_pages", ( err, listings ) ->
+      # again, error is ok
+      (listings || []).forEach ( listing ) -> q.push( listing )
+
+    q.push( null ) # kick off queue, even if there are no posts
+    q.drain = () -> cb( null, paths );
+
+module.exports = Finder
+
+###
 Builder = exports
 
 CWD = process.cwd()
@@ -38,10 +89,6 @@ Builder.addInfo = ( path, kind, info ) ->
 Builder.getInfo = ( path, kind ) ->
   globalInfo["#{kind.toUpperCase()}_INFO"][path]
 
-Config = null
-Builder.config = ( config ) ->
-  Config = config
-  Logger.config Config
 
 renderers = {}
 innerContent = ( meta ) ->
@@ -58,7 +105,7 @@ innerContent = ( meta ) ->
       return ejs.render( meta.src, locals: meta )
 
 Builder.render = ( path, kind, pathOverride=null ) ->
-  meta = _.clone(Builder.getInfo( path, kind ))#_.clone( globalInfo["#{kind.toUpperCase()}_INFO"][path] )
+  meta = _.clone(Builder.getInfo( path, kind ))
   dir = "#{CWD}/build/#{meta.permalink}"
   mkdir_p dir, 0777, ( err ) ->
     if err
@@ -231,6 +278,7 @@ Builder.compileStyles = () ->
     paths: [ process.cwd() + '/_styles' ]
   )
   f = ( style ) ->
+  fs.readdir "_styles", ( err, styles ) ->
     fs.readFile "_styles/#{style}", ( err, css ) ->
       return if err
       fs.mkdir "build/css", 0777, ( err ) ->
@@ -294,3 +342,4 @@ Builder.copyStatics = () ->
         else
           fs.symlink "../_static/#{static}", "build/#{static}", ( err ) ->
             Logger.error "Error symlinking statics #{err}" if err
+###

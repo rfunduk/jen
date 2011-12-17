@@ -19,8 +19,9 @@ Crash course in running this thing:
 
     cd path/to/skeleton
     jen --debug
-    # edit files, etc
+    # edit files, etc, site update automatically
+    # when you're done/happy...
     ^C
-    jen build
-    # edit config.json with deploy command
-    jen deploy
+    jen --build
+    # edit config.coffee and write deploy command
+    jen --deploy

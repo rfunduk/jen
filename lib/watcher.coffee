@@ -1,3 +1,5 @@
+Content = require './content'
+
 WATCH_OPTS =
   persistent: false
   interval: 1
@@ -5,8 +7,12 @@ WATCH_OPTS =
 fs = require 'fs'
 
 watching = {}
-exports.onChange = ( file, cb ) ->
-  unless watching.hasOwnProperty file
-    watching[file] = true
-    fs.watchFile file, WATCH_OPTS, ( newStat, oldStat ) ->
+exports.onChange = ( key, path, cb ) ->
+  if typeof path is 'function'
+    cb = path
+    path = key
+  unless watching[key]?
+    Logger.debug "Watching #{key}..."
+    watching[key] = true
+    fs.watchFile path, WATCH_OPTS, ( newStat, oldStat ) ->
       cb() if oldStat.mtime < newStat.mtime

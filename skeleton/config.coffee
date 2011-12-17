@@ -5,7 +5,7 @@ root: "http://mysite.com"
 analytics_id: "UA-XXXXXXX-N"
 deploy: "rsync -r build/ somehost.com:/var/www/something/"
 scripts:
-  all: []
+  all: [ "skeleton.js" ]
   post: []
   page: []
 styles:

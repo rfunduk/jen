@@ -4,12 +4,11 @@
 }
 ---
 This is a skeleton app. You will find the overall
-style and layout (including this text) in
-`_inc/layout.jade`. Other places of
-interest:
+style and layout in `_inc/layout.jade`.
+Other places of interest:
 
 
-### `config.json`
+### `config.coffee`
 
 Overall site configuration. Some of these keys
 are required, but you can populate it with
@@ -25,12 +24,9 @@ You could choose a different approach or strategy
 if you wanted, like even just hard-coding the
 script tags, thus making the key not required.
 
-
-### `custom.js`
-
-Since `config.json` is truly a JSON file,
-it cannot include functions. So consider `custom.js`
-to be the function part of your configuration. Specify
+Since the config file is written in
+[CoffeeScript](http://coffeescript.org),
+it can include functions. Specify
 here any functions you want available to your pages/posts
 and to the layout.
 
@@ -39,7 +35,10 @@ for outputting a [gist](https://gist.github.com),
 and a helper for linking to another post by permalink.
 
 Follow the same format and write whatever functions you
-will need.
+will need. Exposed as `this` (or `@`) which has tons of
+stuff you need like: `@posts` and `@pages` arrays,
+[`@_`](http://documentcloud.github.com/underscore/) (Underscore.js),
+[`@moment`](http://momentjs.com) and `@config`.
 
 
 ### `etc/`
@@ -65,7 +64,7 @@ and you can refer to their eventual `.css` name
 in your config or in your views.
 
 Eg. If you write a `mysite.less`, then you'll want to
-refer to `/css/mysite.css` somewhere in your config/pages/posts.
+refer to `/css/mysite.css` somewhere in your layout/pages/posts.
 
 Regular `.css` files in `_styles` are simply copied over.
 So feel free to write plain CSS if you like.
@@ -80,7 +79,7 @@ and `.css` and CSS replaced with `.js` and JavaScript :)
 ### `_posts/` and `_pages/`
 
 Blog posts and pages! Either is optional. You can have no
-pages or no posts (making what is not really a blog, of course).
+pages or no posts.
 
 The general idea is to put at the top of each one a
 `JSON` block that describes it:
@@ -105,6 +104,9 @@ That means you can be way sexier:
 Posts don't require a date, and the `draft` field is optional
 in both cases.
 
+Speaking of dates, if you write a `dateFormat` key in your `config.coffee`
+then that will be used to parse the dates you enter here.
+
 The following local variables are accessible inside the layout,
 posts and pages:
 
@@ -113,9 +115,8 @@ posts and pages:
 - **`permalink`**: the url-friendly permalink name of the document.
   This is determined by the filename. This <%- kind %>s permalink
   is _<%- permalink %>_.
-- **`timestamp`**: For posts. A JavaScript
-  [`Date`](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date)
-  corresponding to the `date` field of the post.
+- **`timestamp`**: For posts. A [Moment.js](http://momentjs.com/)
+  instance which corresponds to the parsed `date` field of the post.
 - **`scripts`** and **`styles`**: Arrays of JavaScript and CSS
   files to be included by this document only. This is assuming
   you keep the script/style related stuff intact in the skeleton's
@@ -132,7 +133,7 @@ posts and pages:
   configure your app however makes sense to you. Want to show
   the 5 most recent posts on the bottom of every page on the site?
   You could hardcode the `5` but it would be better to add
-  `"post_count": 5` to `config` and then use this value
+  `post_count: 5` to the config and then use this value
   in the views. For example, the example configuration has a key:
   `custom_setting`, it's value is <%- config.custom_setting %>.
 - **`_`**: [Underscore](http://documentcloud.github.com/underscore/),

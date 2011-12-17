@@ -1,6 +1,7 @@
 title: "Misc Stuff"
 description: "A post in which I show off some other cool stuff."
 date: "7.11.2011"
+draft: true
 ---
 p
   | This post is written with
@@ -20,7 +21,7 @@ ul
   li
     | The date:
     br
-    code= h.moment( timestamp ).format( "%B %d, %Y" )
+    code= h.moment( timestamp ).format( "MMMM DD YYYY" )
   li
     | The helpers:
     br

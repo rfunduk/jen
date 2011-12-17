@@ -1,1 +1,4 @@
-jen.coffee
+#!/usr/bin/env node
+
+var coffee = require('../node_modules/coffee-script');
+var jen = require('../jen.coffee')

@@ -1,6 +1,5 @@
 require 'colors'
 
-
 fmt = ( kind, rest... ) ->
   colors =
     DEBUG: 'grey'
@@ -15,13 +14,7 @@ fmt = ( kind, rest... ) ->
 handleLogArgs = ( args ) -> args
 
 exports._fmt = fmt
-exports.debug = () -> console.log( fmt( 'debug' ), handleLogArgs(arguments)... )
+exports.debug = () -> console.log( fmt( 'debug' ), handleLogArgs(arguments)... ) if Config.DEBUG
 exports.info = () -> console.log( fmt( 'info' ), handleLogArgs(arguments)... )
 exports.error = () -> console.log( fmt( 'error' ), handleLogArgs(arguments)... )
 exports.warn = () -> console.log( fmt( 'warn' ), handleLogArgs(arguments)... )
-
-Config = null
-exports.config = ( config ) ->
-  Config = config
-  if !Config.DEBUG
-    exports.debug = () ->
