@@ -19,14 +19,14 @@ innerContent = ( meta ) ->
   type = meta.extension
   switch type
     when '.md'
-      meta.preprocessed = ejs.render( meta.src, locals: meta )
+      meta.preprocessed = ejs.render( meta.src, meta )
       renderers[type] ?= require( 'node-markdown' ).Markdown
       return renderers[type]( meta.preprocessed )
     when '.jade'
       renderers[type] ?= jade
       return renderers[type].compile( meta.src )(meta)
     when '.ejs'
-      return ejs.render( meta.src, locals: meta )
+      return ejs.render( meta.src, meta )
 
 class GenericContent
   constructor: ( @site, @srcPath ) ->
