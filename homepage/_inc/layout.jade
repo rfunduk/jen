@@ -1,0 +1,21 @@
+!!! 5
+
+html
+  head
+    title= config.title + ( title ? ' &raquo; ' + title : '' )
+    meta( name='description', content=description )
+    meta( charset='utf-8' )
+
+    link( rel='canonical', href="#{config.root}/#{permalink}" )
+    link( rel='stylesheet', href='/css/jen.css', type='text/css', media='all' )
+    script( type='text/javascript', src='/js/jen.js' )
+
+  body( lang='en' )
+    #header
+      h1
+        a( href='/' ) JEN
+
+    #content!= content
+
+    #footer
+      &nbsp;

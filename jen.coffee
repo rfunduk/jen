@@ -3,17 +3,18 @@ cp = require 'child_process'
 
 argv = require('optimist').argv
 
+global.Logger = require './lib/logger'
+
 if argv.seed
   wrench = require 'wrench'
 
-  source = __dirname + '/../skeleton'
+  source = __dirname + '/skeleton'
   dest = process.cwd() + '/' + argv.seed
 
   wrench.copyDirSyncRecursive( source, dest )
 
   Logger.info "SEEDED -> #{dest}"
   process.exit(0)
-
 
 DEPLOY = argv.deploy
 BUILD = argv.build
@@ -24,8 +25,6 @@ global.Config = require './lib/config'
 Config.DEV = DEV
 Config.drafts = DEV || argv.drafts
 Config.DEBUG = argv.debug || false
-
-global.Logger = require './lib/logger'
 
 Site = require './lib/site'
 site = new Site

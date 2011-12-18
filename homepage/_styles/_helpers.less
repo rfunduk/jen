@@ -1,0 +1,36 @@
+.rounded (@radius:6px) {
+  .border_fix;
+  -moz-border-radius: @radius;
+  -webkit-border-radius: @radius;
+  border-radius: @radius;
+}
+
+.border_fix () {
+  -webkit-background-clip: padding !important;
+  -moz-background-clip: padding !important;
+  background-clip: padding-box !important;
+}
+
+.gradient (@start:black, @end:white, @stop:0.5) {
+  background-color: @start;
+  @color_stop_1: color-stop(0, @start);
+  @color_stop_2: color-stop(@stop, @end);
+  background-image: -webkit-gradient(linear, left bottom, left top, @color_stop_1, @color_stop_2);
+  background-image: -moz-linear-gradient(center bottom, @start 0%, @end 50%);
+}
+
+.subtle_drop_shadow (@amount:0.35, @radius: 3px, @vert: 1px, @hor: 1px, @r: 0, @g: 0, @b: 0) {
+  @spread: 0px;
+  @color: rgba(@r,@g,@b,@amount);
+  -webkit-box-shadow: @vert @hor @radius @spread @color;
+  -moz-box-shadow: @vert @hor @radius @spread @color;
+  box-shadow: @vert @hor @radius @spread @color;
+}
+
+.subtle_inset_shadow (@amount:0.05, @radius:0px, @vert: 1px, @hor: 1px) {
+  @spread: 0px;
+  @color: rgba(0,0,0,@amount);
+  -webkit-box-shadow: inset @vert @hor @radius @spread @color;
+  -moz-box-shadow: inset @vert @hor @radius @spread @color;
+  box-shadow: inset @vert @hor @radius @spread @color;
+}
