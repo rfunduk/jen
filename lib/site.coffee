@@ -36,7 +36,7 @@ class Site
     async.parallel( renderFuncs, cb )
   watchContent: () ->
     again = @watchContent
-    Site.WATCH_KINDS.forEach ( kind ) =>
+    Site.KINDS.forEach ( kind ) =>
       for permalink, item of @info[kind]
         toWatch = "_#{item.kind}s/#{item.srcPath}"
         Watcher.onChange toWatch, "#{@root}/#{toWatch}", (( itemToProcess ) ->
@@ -55,7 +55,6 @@ class Site
     cb ?= ( err ) -> Logger.error( "Could not reload content! #{err}" ) if err
     new Finder @, kind, ( err, items ) =>
       @populateInfo( kind, items )
-      @determineIndex()
       cb( err )
   processStyles: ( cb ) ->
     new Finder @, 'styles', ( err, styles ) =>
@@ -80,6 +79,7 @@ class Site
     _(@info.pages).values()
   build: ( cb ) ->
     cb ?= ( err ) ->
+      s.determineIndex()
       if err
         Logger.error "Site build failed! #{e}"
         return
@@ -138,7 +138,6 @@ class Site
         Watcher.onChange '_inc/layout.jade', () ->
           site.build()
 
-Site.WATCH_KINDS = [ 'pages', 'posts', 'styles', 'scripts' ]
-Site.KINDS = _.clone( Site.WATCH_KINDS ).concat( ['statics'] )
+Site.KINDS = [ 'pages', 'posts', 'styles', 'scripts', 'statics' ]
 
 module.exports = Site
