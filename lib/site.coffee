@@ -79,7 +79,6 @@ class Site
     _(@info.pages).values()
   build: ( cb ) ->
     cb ?= ( err ) ->
-      s.determineIndex()
       if err
         Logger.error "Site build failed! #{e}"
         return
@@ -105,6 +104,7 @@ class Site
             cb( err, 'statics' )
       ],
       ( err, loaded ) ->
+        s.determineIndex()
         async.parallel(
           [
             ( cb ) -> s.renderAll( 'posts', cb )
