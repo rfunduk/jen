@@ -14,12 +14,12 @@ class Site
   determineIndex: () ->
     if @config.index?
       if (item = @info.pages[@config.index])?
-        item.index = true
+        item.isIndex = true
         Logger.debug "As index: #{item.kind}/#{item.permalink}"
     else
       # determine newest/index post
       newestThing = _.reject( @posts(), (p) -> p.draft )[0]
-      newestThing.index = true
+      newestThing.isIndex = true
       Logger.debug "As index: #{newestThing.kind}/#{newestThing.permalink}"
   populateInfo: ( kind, items ) ->
     items.forEach ( item ) =>

@@ -58,7 +58,7 @@ class GenericContent
 class PageOrPost extends GenericContent
   constructor: ( @site, @srcPath, @kind ) ->
     super( @site, @srcPath )
-    @index = false
+    @isIndex = false
     @draft = false
   process: ( cb ) ->
     super()
@@ -117,8 +117,8 @@ class PageOrPost extends GenericContent
         Logger.error "Could not process file: #{@permalink} - #{e}, #{e.stack}"
         return
 
-      writeFile = ( dest, html, cb ) ->
-        fs.writeFile dest, html.toString(), ( err ) ->
+      writeFile = ( dest, html, cb ) =>
+        fs.writeFile dest, html.toString(), ( err ) =>
           Logger.error "Error writing final render #{err}" if err
           cb( err )
 
@@ -132,7 +132,7 @@ class PageOrPost extends GenericContent
           tmpl = jade.compile layoutSrc.toString()
           html = tmpl( @, (err) -> Logger.error("OMG#{err}") if err )
           writeFile( dest, html, ( err ) =>
-            if @index
+            if @isIndex
               writeFile( "#{@site.root}/build/index.html", html, (err) -> cb(err, true) )
             else
               cb( err, true )
