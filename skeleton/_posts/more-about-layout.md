@@ -1,9 +1,16 @@
 title: "More About Layout"
 "description": "A post in which I explain: 'what is up with layout?'"
 "date": "1.10.2011"
+layout: "test"
 ---
-`_inc/layout.jade` defines the overall containing markup of
+`_layouts/default.jade` defines the overall containing markup of
 every generated page on the site.
+
+However, this peticular post is actually using a _different_ layout. It
+is identical to `default.jade` but written in [`haml-coffee`](https://github.com/9elements/haml-coffee).
+You can use any of the same engines as posts for layouts. Just give
+the layout the appropriate extension and either name it `default` or specify
+the name in the data at the top of your document (eg: `layout: "test"` in this post's source).
 
 Everything mentioned in the <%- h.link_to('intro', 'intro') %> is
 available, but you don't use [ejs](https://github.com/visionmedia/ejs),

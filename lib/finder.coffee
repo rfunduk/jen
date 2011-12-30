@@ -12,6 +12,10 @@ class Finder
     kind = _.str.rtrim( kind, 's' )
     klass = _.str.capitalize(kind)
     @["_get#{klass}Paths"] ( err, filenames ) ->
+      if err
+        Logger.error( "Could not find #{klass}s!" )
+        return
+
       # filter the paths to exclude . and special files, etc
       filtered = _.reject( filenames || [], ( f ) -> f[0] == '.' || f[0] == '_' )
       # generate Content instances for each path
@@ -32,6 +36,9 @@ class Finder
     fs.readdir "#{@site.root}/_posts", ( err, listings ) ->
       # error is ok, no posts.
       cb( null, listings || [] )
+  _getLayoutPaths: ( cb ) ->
+    fs.readdir "#{@site.root}/_layouts", ( err, listings ) ->
+      cb( err, listings )
   _getPagePaths: ( cb ) ->
     site = @site
     paths = []

@@ -34,6 +34,8 @@ class Site
 
     renderFuncs = _.map( renderTasks, ( task ) -> task.fn(task.item) )
     async.parallel( renderFuncs, cb )
+  renderLayout: ( layout, obj, cb ) ->
+    @info['layouts'][layout].render( obj, cb )
   watchContent: () ->
     again = @watchContent
     Site.KINDS.forEach ( kind ) =>
@@ -60,7 +62,10 @@ class Site
     new Finder @, 'styles', ( err, styles ) =>
       @populateInfo( 'styles', styles )
       @renderAll( 'styles', cb )
-
+  processLayouts: ( cb ) ->
+    new Finder @, 'layouts', ( err, layouts ) =>
+      @populateInfo( 'layouts', layouts )
+      cb( err )
   compileScripts: ( cb ) ->
     new Finder @, 'scripts', ( err, scripts ) =>
       @populateInfo( 'scripts', scripts )
@@ -69,6 +74,7 @@ class Site
     new Finder @, 'statics', ( err, statics ) =>
       @populateInfo( 'statics', statics )
       @renderAll( 'statics', cb )
+
   posts: () ->
     _(@info.posts).chain()
       .values()
@@ -87,6 +93,9 @@ class Site
     s = @
     async.parallel(
       [
+        ( cb ) ->
+          s.processLayouts ( err ) ->
+            cb( err, 'layouts' )
         ( cb ) ->
           s.processContent 'posts', ( err ) ->
             cb( err, 'posts' )
@@ -138,6 +147,6 @@ class Site
         Watcher.onChange '_inc/layout.jade', () ->
           site.build()
 
-Site.KINDS = [ 'pages', 'posts', 'styles', 'scripts', 'statics' ]
+Site.KINDS = [ 'layouts', 'pages', 'posts', 'styles', 'scripts', 'statics' ]
 
 module.exports = Site

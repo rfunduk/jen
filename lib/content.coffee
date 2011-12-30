@@ -15,18 +15,21 @@ jade.filters.plain = ( b, c ) ->
 SRC_DELIM = '---\n'
 
 renderers = {}
-innerContent = ( meta ) ->
-  type = meta.extension
+innerContent = ( src, ext, meta ) ->
+  type = ext
   switch type
     when '.md'
-      meta.preprocessed = ejs.render( meta.src, meta )
+      meta.preprocessed = ejs.render( src, meta )
       renderers[type] ?= require( 'node-markdown' ).Markdown
       return renderers[type]( meta.preprocessed )
     when '.jade'
       renderers[type] ?= jade
-      return renderers[type].compile( meta.src )(meta)
+      return renderers[type].compile( src )(meta)
     when '.ejs'
-      return ejs.render( meta.src, meta )
+      return ejs.render( src, meta )
+    when '.hamlc'
+      renderers[type] ?= require( 'haml-coffee' )
+      return renderers[type].compile( src )( meta )
 
 class GenericContent
   constructor: ( @site, @srcPath ) ->
@@ -54,6 +57,15 @@ class GenericContent
   render: ( cb ) ->
     Logger.debug "Rendering #{@kind}/#{@permalink}..."
     if cb then cb( null, @ ) else @
+
+class Layout extends GenericContent
+  process: ( cb ) ->
+    super()
+    fs.readFile @fullPath, ( err, src ) =>
+      @src = src.toString()
+      cb( err, @ )
+  render: ( obj, cb ) ->
+    cb( null, innerContent( @src, @extension, obj ) )
 
 class PageOrPost extends GenericContent
   constructor: ( @site, @srcPath, @kind ) ->
@@ -112,7 +124,7 @@ class PageOrPost extends GenericContent
       )
 
       try
-        @content = innerContent( @ )
+        @content = innerContent( @src, @extension, @ )
       catch e
         Logger.error "Could not process file: #{@permalink} - #{e}, #{e.stack}"
         return
@@ -127,10 +139,8 @@ class PageOrPost extends GenericContent
       if @layout == false
         writeFile( dest, @content, cb )
       else
-        fs.readFile "#{@site.root}/_inc/#{@layout||'layout'}.jade", ( err, layoutSrc ) =>
+        @site.renderLayout @layout||'default', @, ( err, html ) =>
           Logger.error( @permalink, err, err.stack ) if err
-          tmpl = jade.compile layoutSrc.toString()
-          html = tmpl( @, (err) -> Logger.error("OMG#{err}") if err )
           writeFile( dest, html, ( err ) =>
             if @isIndex
               writeFile( "#{@site.root}/build/index.html", html, (err) -> cb(err, true) )
@@ -224,6 +234,7 @@ class Static extends GenericContent
             cb( null, true )
 
 module.exports =
+  Layout: Layout
   Page: Page
   Post: Post
   Script: Script
