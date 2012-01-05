@@ -9,8 +9,8 @@ Server = require './server'
 class Site
   constructor: ( @root=process.cwd() ) ->
     @config = Config
-    @info = _.inject( Site.KINDS, (( h, k ) -> h[k] = {}; h ), {} )
-    Logger.debug "SITE #{@}"
+    @cleanInfo = _.inject( Site.KINDS, (( h, k ) -> h[k] = {}; h ), {} )
+    @reset()
   determineIndex: () ->
     if @config.index?
       if (item = @info.pages[@config.index])?
@@ -36,23 +36,24 @@ class Site
     async.parallel( renderFuncs, cb )
   renderLayout: ( layout, obj, cb ) ->
     @info['layouts'][layout].render( obj, cb )
-  watchContent: () ->
+  reset: () ->
+    @info = _.clone( @cleanInfo )
+  watchContent: ( kind ) ->
     again = @watchContent
-    Site.KINDS.forEach ( kind ) =>
-      for permalink, item of @info[kind]
-        toWatch = "_#{item.kind}s/#{item.srcPath}"
-        Watcher.onChange toWatch, "#{@root}/#{toWatch}", (( itemToProcess ) ->
-          () ->
-            itemToProcess.process ( err, processed ) ->
-              if err
-                Logger.error "Could not re-process watched #{itemToProcess.kind}, #{err}"
-                return
+    for permalink, item of @info[kind]
+      toWatch = "_#{item.kind}s/#{item.srcPath}"
+      Watcher.onChange toWatch, "#{@root}/#{toWatch}", (( itemToProcess ) ->
+        () ->
+          itemToProcess.process ( err, processed ) ->
+            if err
+              Logger.error "Could not re-process watched #{itemToProcess.kind}, #{err}"
+              return
 
-              itemToProcess.render ( err ) =>
-                if err
-                  Logger.error "Clould not re-render watched #{itemToProcess.kind}, #{err}"
-                  return
-        )(item)
+            itemToProcess.render ( err ) =>
+              if err
+                Logger.error "Clould not re-render watched #{itemToProcess.kind}, #{err}"
+                return
+      )(item)
   processContent: ( kind, cb ) ->
     cb ?= ( err ) -> Logger.error( "Could not reload content! #{err}" ) if err
     new Finder @, kind, ( err, items ) =>
@@ -83,6 +84,8 @@ class Site
       .value()
   pages: () ->
     _(@info.pages).values()
+  layouts: () ->
+    _(@info.layouts).values()
   build: ( cb ) ->
     cb ?= ( err ) ->
       if err
@@ -113,6 +116,8 @@ class Site
             cb( err, 'statics' )
       ],
       ( err, loaded ) ->
+        unless _.all( loaded, _.identity )
+          Logger.warn "Not all content was processed successfully! Missing: #{_.difference( Site.KINDS, loaded ).join(', ')}"
         s.determineIndex()
         async.parallel(
           [
@@ -129,22 +134,33 @@ class Site
         Logger.error err
         return
       else
-        Logger.info "Initial build complete!"
-        @watchContent()
+        Logger.info "Initial build complete."
+
+        # watch and reprocess everything except layouts
+        Site.KINDS.forEach ( kind ) =>
+          return if kind == 'layouts' # watched below, rebuilds whole site
+          return if kind == 'statics' # not necessary to watch, symlinked
+          @watchContent( kind )
+
+        # watch layouts for change and rebuild whole site
+        for permalink, item of @info.layouts
+          toWatch = "_layouts/#{item.srcPath}"
+          Watcher.onChange toWatch, "#{@root}/#{toWatch}",  () -> site.build()
+
         # watch for new files in top level ^_.* directories
         # and re-do the whole site if they change
         fs.readdir @root, ( err, items ) ->
           items.forEach ( item ) ->
             return unless item.match( /^_/ )
             Watcher.onChange item, () ->
+              site.reset()
               site.build( () ->
                 site.watchContent()
               )
+
         # watch config file
         Watcher.onChange 'config.coffee', () ->
           site.config._reload()
-          site.build()
-        Watcher.onChange '_inc/layout.jade', () ->
           site.build()
 
 Site.KINDS = [ 'layouts', 'pages', 'posts', 'styles', 'scripts', 'statics' ]

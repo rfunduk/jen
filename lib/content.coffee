@@ -16,20 +16,19 @@ SRC_DELIM = '---\n'
 
 renderers = {}
 innerContent = ( src, ext, meta ) ->
-  type = ext
-  switch type
+  switch ext
     when '.md'
       meta.preprocessed = ejs.render( src, meta )
-      renderers[type] ?= require( 'node-markdown' ).Markdown
-      return renderers[type]( meta.preprocessed )
+      renderers[ext] ?= require( 'node-markdown' ).Markdown
+      return renderers[ext]( meta.preprocessed )
     when '.jade'
-      renderers[type] ?= jade
-      return renderers[type].compile( src )(meta)
+      renderers[ext] ?= jade
+      return renderers[ext].compile( src )(meta)
     when '.ejs'
       return ejs.render( src, meta )
     when '.hamlc'
-      renderers[type] ?= require( 'haml-coffee' )
-      return renderers[type].compile( src )( meta )
+      renderers[ext] ?= require( 'haml-coffee' )
+      return renderers[ext].compile( src )( meta )
 
 class GenericContent
   constructor: ( @site, @srcPath ) ->
@@ -188,14 +187,16 @@ class Style extends GenericContent
             cb( null, true )
 
         if @extension == '.less'
-          parser.parse( css.toString(), ( err, src ) ->
+          parser.parse( css.toString(), ( err, src ) =>
             if err
+              Logger.error "Error parsing style: #{@fullPath} -> #{err.message} #{err.stack}" if err
               done( err, src )
               return
             try
               result = src.toCSS( compress: true )
               done( null, result )
             catch err2
+              Logger.error "Error parsing style: #{@fullPath} -> #{err2.message} #{err2.stack}" if err2
               done( err2, src )
           )
         else
@@ -214,23 +215,30 @@ class Static extends GenericContent
         cb( err )
         return
 
-      src = "#{@site.root}/_static/#{@thing}"
+      src = "#{@site.root}/_statics/#{@thing}"
       dest = "#{@site.root}/build/#{@thing}"
 
-      if !@site.config.DEV
-        cp.exec "cp -R #{src} #{dest}", ( err ) =>
-          if err
-            Logger.error "Could not write build/#{@thing} during generation. #{arguments}, #{err}"
-            cb( err )
-          else
-            cb( null, true )
+      # ensure that the directory path for this static exists
+      dirParts = dest.split('/')
+      dirParts.pop()
+      dir = dirParts.join('/')
+      mkdir_p dir, 0777, ( err ) =>
+        if err
+          Logger.error "Error in mkdir_p - #{dir} - #{err}"
+          cb( err, null )
+          return
 
-      else
-        fs.symlink src, dest, ( err ) ->
-          if err
-            Logger.error "Error symlinking statics #{err}"
-            cb( err )
-          else
+        if !@site.config.DEV
+          cp.exec "cp -R #{src} #{dest}", ( err ) =>
+            if err
+              Logger.error "Could not write build/#{@thing} during generation. #{arguments}, #{err}"
+              cb( err )
+            else
+              cb( null, true )
+
+        else
+          fs.symlink src, dest, ( err ) ->
+            # error is ok, symlink already exists here
             cb( null, true )
 
 module.exports =

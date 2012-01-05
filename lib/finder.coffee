@@ -11,7 +11,7 @@ class Finder
     site = @site
     kind = _.str.rtrim( kind, 's' )
     klass = _.str.capitalize(kind)
-    @["_get#{klass}Paths"] ( err, filenames ) ->
+    @_getNestedPaths klass, ( err, filenames ) ->
       if err
         Logger.error( "Could not find #{klass}s!" )
         return
@@ -23,30 +23,14 @@ class Finder
         content = new CONTENT_TYPES[klass]( site, path )
         content.process( done )
       async.map( filtered, contentGenerator, cb )
-  _getStaticPaths: ( cb ) ->
-    fs.readdir "#{@site.root}/_static", ( err, statics ) ->
-      cb( err, statics || [] )
-  _getStylePaths: ( cb ) ->
-    fs.readdir "#{@site.root}/_styles", ( err, styles ) ->
-      cb( err, styles || [] )
-  _getScriptPaths: ( cb ) ->
-    fs.readdir "_scripts", ( err, scripts ) ->
-      cb( err, scripts || [] )
-  _getPostPaths: ( cb ) ->
-    fs.readdir "#{@site.root}/_posts", ( err, listings ) ->
-      # error is ok, no posts.
-      cb( null, listings || [] )
-  _getLayoutPaths: ( cb ) ->
-    fs.readdir "#{@site.root}/_layouts", ( err, listings ) ->
-      cb( err, listings )
-  _getPagePaths: ( cb ) ->
-    site = @site
+  _getNestedPaths: ( kind, cb ) ->
     paths = []
+    rootPath = "#{@site.root}/_#{kind}s"
     processor = ( listing, done ) ->
       if listing == null
         done()
         return
-      fs.stat "#{site.root}/_pages/#{listing}", ( err, stat ) ->
+      fs.stat "#{rootPath}/#{listing}", ( err, stat ) ->
         if err
           Logger.error( "Could not stat file #{listing}" )
           done()
@@ -54,18 +38,19 @@ class Finder
           paths.push listing
           done()
         else
-          fs.readdir "#{site.root}/_pages/#{listing}", ( err2, sublistings ) ->
+          fs.readdir "#{rootPath}/#{listing}", ( err2, sublistings ) ->
             sublistings.forEach ( sublisting ) ->
               q.push( "#{listing}/#{sublisting}" )
             done()
 
     q = async.queue processor, 1
 
-    fs.readdir "#{@site.root}/_pages", ( err, listings ) ->
+    fs.readdir "#{rootPath}", ( err, listings ) ->
       # again, error is ok
-      (listings || []).forEach ( listing ) -> q.push( listing )
+      (listings || []).forEach ( listing ) ->
+        q.push( listing )
 
     q.push( null ) # kick off queue, even if there are no posts
-    q.drain = () -> cb( null, paths );
+    q.drain = () -> cb( null, paths||[] )
 
 module.exports = Finder
