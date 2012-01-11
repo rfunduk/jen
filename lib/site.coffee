@@ -87,6 +87,8 @@ class Site
   layouts: () ->
     _(@info.layouts).values()
   build: ( cb ) ->
+    @reset()
+
     cb ?= ( err ) ->
       if err
         Logger.error "Site build failed! #{e}"
@@ -153,7 +155,6 @@ class Site
           items.forEach ( item ) ->
             return unless item.match( /^_/ )
             Watcher.onChange item, () ->
-              site.reset()
               site.build( () ->
                 site.watchContent()
               )
