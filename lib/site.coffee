@@ -1,6 +1,7 @@
 fs = require 'fs'
 _ = require 'underscore'
 async = require 'async'
+mkdir_p = require( './mkdir_p' ).mkdir_p
 
 Watcher = require './watcher'
 Finder = require './finder'
@@ -98,6 +99,9 @@ class Site
     s = @
     async.parallel(
       [
+        ( cb ) ->
+          mkdir_p "#{s.root}/build", 0777, ( err ) ->
+            cb( err, 'init' )
         ( cb ) ->
           s.processLayouts ( err ) ->
             cb( err, 'layouts' )

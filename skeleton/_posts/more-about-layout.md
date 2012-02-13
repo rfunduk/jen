@@ -13,8 +13,7 @@ the layout the appropriate extension and either name it `default` or specify
 the name in the data at the top of your document (eg: `layout: "test"` in this post's source).
 
 Everything mentioned in the <%- h.link_to('intro', 'intro') %> is
-available, but you don't use [ejs](https://github.com/visionmedia/ejs),
-you use [jade](https://github.com/visionmedia/jade).
+available in layouts.
 
 In there, you'll see a pretty standard start to a site.
 
@@ -42,9 +41,15 @@ Then we get into some fancy stuff:
 
     ... etc
 
-Look in `config.json` for the `styles` key. Notice it has 3 keys inside it.
+Look in `config.coffee` for the `styles` key. Notice it has 3 keys inside it.
 `all`, `posts` and `pages`. You can see how those are used here since
 `kind` is defined by the type of thing we're rendering. The last `styles || []`
 is the optional array on posts/pages themselves.
+
+This isn't something 'built-in' to jen, though. This is just an example
+of what you could do, and it is pretty handy. Just keep in mind that you can
+have just a single key of 'styles' and 'scripts' and not do any of that
+flattening and stuff... Or maybe you just hardcode the names of your styles
+and scripts... Whatever!
 
 Then we get into the body which is standard stuff.

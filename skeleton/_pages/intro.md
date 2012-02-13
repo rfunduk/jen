@@ -1,10 +1,8 @@
-{
-  "title": "Have you met Jen?",
-  "description": "A page to show how jen works."
-}
+title: "Have you met Jen?"
+description: "A page to show how jen works."
 ---
 This is a skeleton app. You will find the overall
-style and layout in `_inc/layout.jade`.
+style and layout in `_layouts/default.jade`.
 Other places of interest:
 
 
@@ -19,7 +17,7 @@ development server you are likely viewing right now.
 
 But you'll notice that the `scripts`
 key is simply used in the `head` of
-`layout.jade` to write out script tags.
+`default.jade` to write out script tags.
 You could choose a different approach or strategy
 if you wanted, like even just hard-coding the
 script tags, thus making the key not required.
@@ -54,7 +52,7 @@ perfect place to put that stuff.
 
 Where the built site, the result of the generation,
 will be placed, served from in development mode
-and eventually deployed from.
+and eventually deployed from. Usually `.gitignore`'d.
 
 
 ### `_styles/`

@@ -3,7 +3,7 @@
 %html
   %head
     %title #{@config.title + ( if @title then " &raquo; #{@title}" else '' )}
-    %meta{ name: 'description', content: description }
+    %meta{ name: 'description', content: @description }
     %meta{ charset: 'utf-8' }
 
     %link{ rel: 'canonical', href: "#{@config.root}/#{@permalink}" }

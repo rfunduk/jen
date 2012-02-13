@@ -29,8 +29,9 @@ Helpers that output HTML need to be written like so:
 
 <pre><code>&lt;%- h.link_to( 'permalink' ) %&gt;</code></pre>
 
-For logic you can just leave it bare, and for non-markup
-or markup you want escaped you can use the <code>&lt;%=</code> form:
+For logic you can just leave it bare (without the <code>-</code>,
+and for non-markup or markup you want escaped you can use the
+<code>&lt;%=</code> form:
 
 <pre><code>&lt;% [ 'img1', 'img2', 'img3' ].forEach( function(img) { %&gt;
 
@@ -45,6 +46,6 @@ Which would render:
 
 This example is possibly not the best use of `ejs` :)
 Probably the most common use will simply be for using helpers
-you define in `custom.js`.
+you define in `config.coffee`.
 
 Here's a post with some misc stuff - [omg!](<%- h.url_for('misc-stuff') %>)
