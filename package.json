@@ -1,7 +1,7 @@
 {
   "name": "jen",
   "description": "jen static site generator",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "author": "Ryan Funduk <ryan.funduk@gmail.com>",
   "repository": "git://github.com/rfunduk/jen",
   "engines": [ "node >= 0.4.12" ],
@@ -15,7 +15,7 @@
     "jade": "0.19.x",
     "ejs": "0.6.x",
     "haml-coffee": "0.5.x",
-    "async": "0.1.x",
+    "async": "0.1.15",
     "less": "1.1.x",
     "express": "2.5.x",
     "underscore": "1.2.x",

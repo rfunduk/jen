@@ -95,7 +95,7 @@ class PageOrPost extends GenericContent
   render: ( cb ) ->
     super()
     dir = "#{@site.root}/build/#{@permalink}"
-    mkdir_p dir, 0777, ( err ) =>
+    generate = (err=null) =>
       if err
         Logger.error "Error in mkdir_p - #{dir} - #{err}"
         cb( err, null )
@@ -133,7 +133,7 @@ class PageOrPost extends GenericContent
           Logger.error "Error writing final render #{err}" if err
           cb( err )
 
-      dest = "#{@site.root}/build/#{@permalink}/index.html"
+      dest = "#{@site.root}/build/#{@permalink}#{if @bare then "" else "/index.html"}"
 
       if @layout == false
         writeFile( dest, @content, cb )
@@ -146,6 +146,10 @@ class PageOrPost extends GenericContent
             else
               cb( err, true )
           )
+    if @bare
+      generate()
+    else
+      mkdir_p dir, 0777, ( err ) -> generate()
 
 class Page extends PageOrPost
   constructor: ( @site, @srcPath ) ->
