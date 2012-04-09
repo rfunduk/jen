@@ -22,35 +22,33 @@ class Finder
       contentGenerator = ( path, done ) ->
         content = new CONTENT_TYPES[klass]( site, path )
         content.process( done )
-      async.map( filtered, contentGenerator, cb )
+      async.map( filtered, contentGenerator, () -> Logger.debug("Done processing #{klass}!");cb(arguments...) )
   _getNestedPaths: ( kind, cb ) ->
-    paths = []
-    rootPath = "#{@site.root}/_#{kind}s"
-    processor = ( listing, done ) ->
-      if listing == null
-        done()
-        return
-      fs.stat "#{rootPath}/#{listing}", ( err, stat ) ->
-        if err
-          Logger.error( "Could not stat file #{listing}" )
-          done()
-        else if stat.isFile()
-          paths.push listing
-          done()
-        else
-          fs.readdir "#{rootPath}/#{listing}", ( err2, sublistings ) ->
-            sublistings.forEach ( sublisting ) ->
-              q.push( "#{listing}/#{sublisting}" )
-            done()
+    rootPath = "#{@site.root}/_#{kind.toLowerCase()}s"
+    rootPathRemover = new RegExp( "^#{rootPath}/" )
 
-    q = async.queue processor, 1
+    walk = ( dir, done ) ->
+      results = []
+      fs.readdir dir, ( err, list ) ->
+        return done( err ) if err
 
-    fs.readdir "#{rootPath}", ( err, listings ) ->
-      # again, error is ok
-      (listings || []).forEach ( listing ) ->
-        q.push( listing )
+        pending = list.length
+        return done( null, results ) unless pending > 0
 
-    q.push( null ) # kick off queue, even if there are no posts
-    q.drain = () -> cb( null, paths||[] )
+        list.forEach ( file ) ->
+          fullpath = "#{dir}/#{file}"
+          fs.stat fullpath, ( err, stat ) ->
+            if stat && stat.isDirectory()
+              walk fullpath, ( err, res ) ->
+                results = results.concat(res)
+                pending--
+                done( null, results ) unless pending > 0
+            else
+              rpath = fullpath.replace( rootPathRemover, '' )
+              results.push rpath
+              pending--
+              done( null, results ) unless pending > 0
+
+    walk rootPath, cb
 
 module.exports = Finder

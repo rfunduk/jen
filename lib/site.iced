@@ -29,15 +29,14 @@ class Site
       else
         Logger.debug "Skipping #{item.kind}/#{item.permalink}"
   renderAll: ( kind, cb ) ->
-    renderTasks = []
-    for permalink, item of @info[kind]
-      renderTasks.push( { item: item, fn: ( item ) -> ( cb ) -> item.render( cb ) } )
-
-    renderFuncs = _.map( renderTasks, ( task ) -> task.fn(task.item) )
-    async.parallel( renderFuncs, cb )
+    await
+      for permalink, item of @info[kind]
+        item.render( defer e )
+    cb()
   renderLayout: ( layout, obj, cb ) ->
     @info['layouts'][layout].render( obj, cb )
-  reset: () ->
+  reset: ( cb ) ->
+    mkdir_p( "#{@root}/build", 0o0777, cb ? (()->) )
     @info = _.clone( @cleanInfo )
   watchContent: ( kind ) ->
     again = @watchContent
@@ -56,26 +55,9 @@ class Site
                 return
       )(item)
   processContent: ( kind, cb ) ->
-    cb ?= ( err ) -> Logger.error( "Could not reload content! #{err}" ) if err
     new Finder @, kind, ( err, items ) =>
       @populateInfo( kind, items )
-      cb( err )
-  processStyles: ( cb ) ->
-    new Finder @, 'styles', ( err, styles ) =>
-      @populateInfo( 'styles', styles )
-      @renderAll( 'styles', cb )
-  processLayouts: ( cb ) ->
-    new Finder @, 'layouts', ( err, layouts ) =>
-      @populateInfo( 'layouts', layouts )
-      cb( err )
-  compileScripts: ( cb ) ->
-    new Finder @, 'scripts', ( err, scripts ) =>
-      @populateInfo( 'scripts', scripts )
-      @renderAll( 'scripts', cb )
-  copyStatics: ( cb ) ->
-    new Finder @, 'statics', ( err, statics ) =>
-      @populateInfo( 'statics', statics )
-      @renderAll( 'statics', cb )
+      cb()
 
   posts: () ->
     _(@info.posts).chain()
@@ -87,52 +69,26 @@ class Site
     _(@info.pages).values()
   layouts: () ->
     _(@info.layouts).values()
-  build: ( cb ) ->
-    @reset()
-
-    cb ?= ( err ) ->
+  build: ( done ) ->
+    s = @
+    done ?= ( err ) ->
       if err
         Logger.error "Site build failed! #{e}"
         return
       else
         Logger.info "Build complete."
-    s = @
-    async.parallel(
-      [
-        ( cb ) ->
-          mkdir_p "#{s.root}/build", 0777, ( err ) ->
-            cb( err, 'init' )
-        ( cb ) ->
-          s.processLayouts ( err ) ->
-            cb( err, 'layouts' )
-        ( cb ) ->
-          s.processContent 'posts', ( err ) ->
-            cb( err, 'posts' )
-        ( cb ) ->
-          s.processContent 'pages', ( err ) ->
-            cb( err, 'pages' )
-        ( cb ) ->
-          s.processStyles ( err ) ->
-            cb( err, 'styles' )
-        ( cb ) ->
-          s.compileScripts ( err ) ->
-            cb( err, 'scripts' )
-        ( cb ) ->
-          s.copyStatics ( err ) ->
-            cb( err, 'statics' )
-      ],
-      ( err, loaded ) ->
-        unless _.all( loaded, _.identity )
-          Logger.warn "Not all content was processed successfully! Missing: #{_.difference( Site.KINDS, loaded ).join(', ')}"
-        s.determineIndex()
-        async.parallel(
-          [
-            ( cb ) -> s.renderAll( 'posts', cb )
-            ( cb ) -> s.renderAll( 'pages', cb )
-          ],
-          cb
-        )
-    )
+    @reset ->
+      Logger.info "Processing content..."
+      for kind, i in Site.KINDS
+        await s.processContent( kind, defer e )
+
+      s.determineIndex()
+
+      Logger.info "Rendering content..."
+      for kind, i in _.reject( Site.KINDS, (k) -> k == 'layouts' )
+        await s.renderAll( kind, defer e )
+
+      done()
   developmentMode: () ->
     @build ( err ) =>
       site = @

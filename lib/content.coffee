@@ -1,4 +1,3 @@
-coffee = require 'coffee-script'
 cp = require 'child_process'
 fs = require 'fs'
 _ = require 'underscore'
@@ -59,10 +58,10 @@ class GenericContent
 
 class Layout extends GenericContent
   process: ( cb ) ->
-    super()
-    fs.readFile @fullPath, ( err, src ) =>
-      @src = src.toString()
-      cb( err, @ )
+    super () =>
+      fs.readFile @fullPath, ( err, src ) =>
+        @src = src.toString()
+        cb( err, @ )
   render: ( obj, cb ) ->
     cb( null, innerContent( @src, @extension, obj ) )
 
@@ -72,84 +71,84 @@ class PageOrPost extends GenericContent
     @isIndex = false
     @draft = false
   process: ( cb ) ->
-    super()
-    fs.readFile @fullPath, ( err, src ) =>
-      if err
-        Logger.error "Error reading source of #{@kind}/#{@srcPath} - #{err}"
-        cb( err, @ )
-        return
+    super () =>
+      fs.readFile @fullPath, ( err, src ) =>
+        if err
+          Logger.error "Error reading source of #{@kind}/#{@srcPath} - #{err}"
+          cb( err, @ )
+          return
 
-      src = src.toString().split( SRC_DELIM )
-      meta = eval coffee.compile( src[0], { bare: true } )
+        src = src.toString().split( SRC_DELIM )
+        meta = eval coffeescript.compile( src[0], { bare: true } )
 
-      for k, v of meta
-        @[k] = v
-      @scripts ?= []
-      @styles ?= []
-      @src = src.splice(1).join( SRC_DELIM )
+        for k, v of meta
+          @[k] = v
+        @scripts ?= []
+        @styles ?= []
+        @src = src.splice(1).join( SRC_DELIM )
 
-      if @kind == 'post'
-        @timestamp = moment( meta.date, @site.config.dateFormat || "DD.MM.YYYY" )
+        if @kind == 'post'
+          @timestamp = moment( meta.date, @site.config.dateFormat || "DD.MM.YYYY" )
 
-      cb( null, @ )
+        cb( null, @ )
   render: ( cb ) ->
-    super()
-    dir = "#{@site.root}/build/#{@permalink}"
-    generate = (err=null) =>
-      if err
-        Logger.error "Error in mkdir_p - #{dir} - #{err}"
-        cb( err, null )
-        return
+    super () =>
+      dir = "#{@site.root}/build/#{@permalink}"
+      generate = (err=null) =>
+        if err
+          Logger.error "Error in mkdir_p - #{dir} - #{err}"
+          cb( err, null )
+          return
 
-      @posts = @site.posts()
-      @pages = @site.pages()
+        @posts = @site.posts()
+        @pages = @site.pages()
 
-      @config = @site.config
-      @_ = _
+        @config = @site.config
+        @_ = _
 
-      self = @
-      @h = _.reduce(
-        _.keys( Config.helpers||{} ),
-        (
-          (uh, key) ->
-            uh[key] = _.bind( Config.helpers[key], self )
-            return uh
-        ),
-        {
-          _: _,
-          moment: moment
-          innerContent: innerContent
-        }
-      )
+        self = @
+        @h = _.reduce(
+          _.keys( Config.helpers||{} ),
+          (
+            (uh, key) ->
+              uh[key] = _.bind( Config.helpers[key], self )
+              return uh
+          ),
+          {
+            _: _,
+            moment: moment
+            innerContent: innerContent
+          }
+        )
 
-      try
-        @content = innerContent( @src, @extension, @ )
-      catch e
-        Logger.error "Could not process file: #{@permalink} - #{e}, #{e.stack}"
-        return
+        try
+          @content = innerContent( @src, @extension, @ )
+        catch e
+          Logger.error "Could not process file: #{@permalink} - #{e}, #{e.stack}"
+          return
 
-      writeFile = ( dest, html, cb ) =>
-        fs.writeFile dest, html.toString(), ( err ) =>
-          Logger.error "Error writing final render #{err}" if err
-          cb( err )
+        writeFile = ( dest, html, cb ) =>
+          fs.writeFile dest, html.toString(), ( err ) =>
+            Logger.error "Error writing final render #{err}" if err
+            cb( err )
 
-      dest = "#{@site.root}/build/#{@permalink}#{if @bare then "" else "/index.html"}"
+        dest = "#{@site.root}/build/#{@permalink}#{if @bare then "" else "/index.html"}"
 
-      if @layout == false
-        writeFile( dest, @content, cb )
+        if @layout == false
+          writeFile( dest, @content, cb )
+        else
+          @site.renderLayout @layout||'default', @, ( err, html ) =>
+            Logger.error( @permalink, err, err.stack ) if err
+            writeFile( dest, html, ( err ) =>
+              if @isIndex
+                writeFile( "#{@site.root}/build/index.html", html, (err) -> cb(err, true) )
+              else
+                cb( err, true )
+            )
+      if @bare
+        generate()
       else
-        @site.renderLayout @layout||'default', @, ( err, html ) =>
-          Logger.error( @permalink, err, err.stack ) if err
-          writeFile( dest, html, ( err ) =>
-            if @isIndex
-              writeFile( "#{@site.root}/build/index.html", html, (err) -> cb(err, true) )
-            else
-              cb( err, true )
-          )
-    if @bare
-      generate()
-    else
-      mkdir_p dir, 0777, ( err ) -> generate()
+        mkdir_p dir, 0777, ( err ) -> generate()
 
 class Page extends PageOrPost
   constructor: ( @site, @srcPath ) ->
@@ -161,50 +160,50 @@ class Post extends PageOrPost
 
 class Script extends GenericContent
   render: ( cb ) ->
-    super()
-    fs.readFile @fullPath, ( err, coffee ) =>
-      fs.mkdir "#{@site.root}/build/js", 0777, ( err ) =>
-        src = if @extension == '.coffee'
-                coffeescript.compile( coffee+"" )
-              else
-                coffee+""
-        fs.writeFile "#{@site.root}/build/js/#{@thing.replace(/coffee$/, 'js')}", src.toString(), ( err ) ->
-          Logger.error "Error in script done callback #{err}" if err
-          cb( null, true )
+    super () =>
+      fs.readFile @fullPath, ( err, coffee ) =>
+        fs.mkdir "#{@site.root}/build/js", 0777, ( err ) =>
+          src = if @extension == '.coffee'
+                  coffeescript.compile( coffee+"" )
+                else
+                  coffee+""
+          fs.writeFile "#{@site.root}/build/js/#{@thing.replace(/coffee$/, 'js')}", src.toString(), ( err ) ->
+            Logger.error "Error in script done callback #{err}" if err
+            cb( null, true )
 
 class Style extends GenericContent
   render: ( cb ) ->
-    super()
-    parser = new(less.Parser)(
-      paths: [ "#{@site.root}/_styles" ]
-    )
-    fs.readFile @fullPath, ( err, css ) =>
-      return cb( err ) if err
-      fs.mkdir "#{@site.root}/build/css", 0777, () =>
-        done = ( err, src ) =>
-          if err
-            Logger.error "Could not process style: #{@permalink}, #{JSON.stringify(err,undefined,2)}"
-            cb( err )
-            return
-          fs.writeFile "#{@site.root}/build/css/#{@thing.replace(/less$/, 'css')}", src.toString(), ( err ) ->
-            Logger.error "Error in style done callback #{err}" if err
-            cb( null, true )
-
-        if @extension == '.less'
-          parser.parse( css.toString(), ( err, src ) =>
+    super () =>
+      parser = new(less.Parser)(
+        paths: [ "#{@site.root}/_styles" ]
+      )
+      fs.readFile @fullPath, ( err, css ) =>
+        return cb( err ) if err
+        fs.mkdir "#{@site.root}/build/css", 0777, () =>
+          done = ( err, src ) =>
             if err
-              Logger.error "Error parsing style: #{@fullPath} -> #{err.message} #{err.stack}" if err
-              done( err, src )
+              Logger.error "Could not process style: #{@permalink}, #{JSON.stringify(err,undefined,2)}"
+              cb( err )
               return
-            try
-              result = src.toCSS( compress: true )
-              done( null, result )
-            catch err2
-              Logger.error "Error parsing style: #{@fullPath} -> #{err2.message} #{err2.stack}" if err2
-              done( err2, src )
-          )
-        else
-          done( null, css+"" )
+            fs.writeFile "#{@site.root}/build/css/#{@thing.replace(/less$/, 'css')}", src.toString(), ( err ) ->
+              Logger.error "Error in style done callback #{err}" if err
+              cb( null, true )
+
+          if @extension == '.less'
+            parser.parse( css.toString(), ( err, src ) =>
+              if err
+                Logger.error "Error parsing style: #{@fullPath} -> #{err.message} #{err.stack}" if err
+                done( err, src )
+                return
+              try
+                result = src.toCSS( compress: true )
+                done( null, result )
+              catch err2
+                Logger.error "Error parsing style: #{@fullPath} -> #{err2.message} #{err2.stack}" if err2
+                done( err2, src )
+            )
+          else
+            done( null, css+"" )
 
 class Static extends GenericContent
   render: ( cb ) ->
@@ -212,38 +211,38 @@ class Static extends GenericContent
     # and then based on env:
     #   development: symlink anything in data/static to build
     #   production:  fs copy anything in data/static to build
-    super()
-    cp.exec "rm -rf #{@site.root}/build/#{@thing}", ( err ) =>
-      if err
-        Logger.error "Error in static copy #{err}"
-        cb( err )
-        return
-
-      src = "#{@site.root}/_statics/#{@thing}"
-      dest = "#{@site.root}/build/#{@thing}"
-
-      # ensure that the directory path for this static exists
-      dirParts = dest.split('/')
-      dirParts.pop()
-      dir = dirParts.join('/')
-      mkdir_p dir, 0777, ( err ) =>
+    super () =>
+      cp.exec "rm -rf #{@site.root}/build/#{@thing}", ( err ) =>
         if err
-          Logger.error "Error in mkdir_p - #{dir} - #{err}"
-          cb( err, null )
+          Logger.error "Error in static copy #{err}"
+          cb( err )
           return
 
-        if !@site.config.DEV
-          cp.exec "cp -R #{src} #{dest}", ( err ) =>
-            if err
-              Logger.error "Could not write build/#{@thing} during generation. #{arguments}, #{err}"
-              cb( err )
-            else
-              cb( null, true )
+        src = "#{@site.root}/_statics/#{@thing}"
+        dest = "#{@site.root}/build/#{@thing}"
 
-        else
-          fs.symlink src, dest, ( err ) ->
-            # error is ok, symlink already exists here
-            cb( null, true )
+        # ensure that the directory path for this static exists
+        dirParts = dest.split('/')
+        dirParts.pop()
+        dir = dirParts.join('/')
+        mkdir_p dir, 0777, ( err ) =>
+          if err
+            Logger.error "Error in mkdir_p - #{dir} - #{err}"
+            cb( err, null )
+            return
+
+          if !@site.config.DEV
+            cp.exec "cp -R #{src} #{dest}", ( err ) =>
+              if err
+                Logger.error "Could not write build/#{@thing} during generation.", arguments, err
+                cb( err )
+              else
+                cb( null, true )
+
+          else
+            fs.symlink src, dest, ( err ) ->
+              # error is ok, symlink already exists here
+              cb( null, true )
 
 module.exports =
   Layout: Layout

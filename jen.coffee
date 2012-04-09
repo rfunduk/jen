@@ -50,7 +50,7 @@ else
   if BUILD
     Logger.info "BUILD :: Building site (./build)"
     cp.exec "rm -rf #{site.root}/build/*", () ->
-      fs.mkdir "#{site.root}/build", 0777, () ->
+      fs.mkdir "#{site.root}/build", 0o0777, () ->
         site.build ( err ) ->
           Logger.info "BUILD :: Complete"
           if err

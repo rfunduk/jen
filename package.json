@@ -1,11 +1,15 @@
 {
   "name": "jen",
   "description": "jen static site generator",
-  "version": "0.4.6",
+  "version": "0.5",
   "author": "Ryan Funduk <ryan.funduk@gmail.com>",
   "repository": "git://github.com/rfunduk/jen",
-  "engines": [ "node >= 0.4.12" ],
-  "bin": { "jen": "./bin/jen" },
+  "engines": [
+    "node >= 0.4.12"
+  ],
+  "bin": {
+    "jen": "./bin/jen"
+  },
   "dependencies": {
     "moment": "1.2.x",
     "coffee-script": "1.2.x",
@@ -16,10 +20,11 @@
     "ejs": "0.6.x",
     "haml-coffee": "0.5.x",
     "async": "0.1.15",
-    "less": "1.1.x",
+    "less": "1.3.x",
     "express": "2.5.x",
     "underscore": "1.2.x",
     "underscore.string": "2.0.x",
-    "colors": "0.6.x"
+    "colors": "0.6.x",
+    "iced-coffee-script": "~1.2.0u"
   }
 }

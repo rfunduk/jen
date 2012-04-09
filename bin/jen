@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 
-var coffee = require('../node_modules/coffee-script');
+var coffee = require('../node_modules/iced-coffee-script');
 var jen = require('../jen.coffee')
