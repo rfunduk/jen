@@ -29,10 +29,9 @@ class Site
       else
         Logger.debug "Skipping #{item.kind}/#{item.permalink}"
   renderAll: ( kind, cb ) ->
-    await
-      for permalink, item of @info[kind]
-        item.render( defer e )
-    cb()
+    iterator = ( item, callback ) ->
+      item.render( callback )
+    async.mapSeries( @info[kind], iterator, cb )
   renderLayout: ( layout, obj, cb ) ->
     @info['layouts'][layout].render( obj, cb )
   reset: ( cb ) ->
