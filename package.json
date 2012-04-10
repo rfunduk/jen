@@ -1,7 +1,7 @@
 {
   "name": "jen",
   "description": "jen static site generator",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": "Ryan Funduk <ryan.funduk@gmail.com>",
   "repository": "git://github.com/rfunduk/jen",
   "engines": [

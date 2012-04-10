@@ -4,7 +4,7 @@ fs = require 'fs'
 class Server
   constructor: ( @site ) ->
     @app = express.createServer(
-      Config.DEBUG && express.logger( format: Logger._fmt( 'info' ) + " :method :url :status" ),
+      Config.DEBUG && express.logger( format: Logger._fmt( 'info' ) + " :method :url :status" )
       ( req, res, next ) ->
         fs.stat "build/#{req.url}", ( err, stat ) ->
           if err || stat.isDirectory()
