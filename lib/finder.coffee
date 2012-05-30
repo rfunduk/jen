@@ -13,7 +13,8 @@ class Finder
     klass = _.str.capitalize(kind)
     @_getNestedPaths klass, ( err, filenames ) ->
       if err
-        Logger.error( "Could not find #{klass}s!" )
+        Logger.debug( "Could not find #{klass}s!" )
+        cb( null, [] )
         return
 
       # filter the paths to exclude . and special files, etc

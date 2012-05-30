@@ -44,6 +44,7 @@ class GenericContent
     @filename = pathParts.pop()
     @path = pathParts.join('/')
     @path += '/' if @path
+
     @permalink = "#{@path}#{@filename}"
     @fullPath = "#{@site.root}/_#{@kind}s/#{@srcPath}"
 
@@ -81,11 +82,18 @@ class PageOrPost extends GenericContent
         src = src.toString().split( SRC_DELIM )
         meta = eval coffeescript.compile( src[0], { bare: true } )
 
-        for k, v of meta
-          @[k] = v
+        @[k] = v for k, v of meta
+
+        @meta = meta
         @scripts ?= []
         @styles ?= []
         @src = src.splice(1).join( SRC_DELIM )
+
+        # lift date from path and rewrite permalink if appropriate
+        if @filename.match('--')
+          parts = @filename.split('--')
+          meta.date = parts[0].split('-').reverse().join('.')
+          @permalink = "#{@path}#{parts[1]}"
 
         if @kind == 'post'
           @timestamp = moment( meta.date, @site.config.dateFormat || "DD.MM.YYYY" )
