@@ -97,6 +97,7 @@ class PageOrPost extends GenericContent
 
         if @kind == 'post'
           @timestamp = moment( meta.date, @site.config.dateFormat || "DD.MM.YYYY" )
+          @draft = @draft || !(@fullPath.match( /\/drafts\// ) == null)
 
         cb( null, @ )
   render: ( cb ) ->
